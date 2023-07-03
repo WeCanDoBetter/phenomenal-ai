@@ -1,10 +1,14 @@
-# @wecandobetter/phenomenal-ai
+# Phenomenal AI
 
-Phenomenal AI is a TypeScript package for building a turn-based conversational
-prompt generator for large language models. This package provides the building
-blocks for simulating conversational interactions between multiple entities,
-referred to as actors. Actors can share information, engage in dialogue, and
-dynamically adjust the course of conversation based on predefined rules.
+[![npm version](https://badge.fury.io/js/%40wecandobetter%2Fphenomenal-ai.svg)](https://badge.fury.io/js/%40wecandobetter%2Fphenomenal-ai)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
+**Phenomenal AI** is a TypeScript package for building a turn-based
+conversational prompt generator for large language models. This package provides
+the building blocks for simulating conversational interactions between multiple
+entities, referred to as actors. Actors can share information, engage in
+dialogue, and dynamically adjust the course of conversation based on predefined
+rules.
 
 The `Conversation` class encapsulates all actors and manages the history,
 context and the scheduling of actor's turns.
@@ -100,10 +104,17 @@ actors.
 - `constructor(name: string, actors: Actor[])`: Initializes a new instance of
   the Conversation class.
 - `push(actor: string, text: string)`: Add a new message to the history.
+- `query(options: { speaker, answerer, query, generateText, store = false })`:
+  Returns a promise that resolves to a turn response.
 - `turn(options: { generateText: (prompt: string) => Promise<string>; })`:
-  Returns a promise that resolves to the speaker and the response.
+  Returns a promise that resolves to a turn response.
 - `loop(options: { signal: AbortSignal; generateText: (prompt: string) => Promise<string>; })`:
   An async generator that yields the speaker and the response.
+
+### ConversationHistory
+
+The `ConversationHistory` class represents the history of a conversation. It
+tracks the course of dialogue over time. See source files for more details.
 
 ### Actor
 
