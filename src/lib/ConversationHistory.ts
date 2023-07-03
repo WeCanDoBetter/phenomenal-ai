@@ -1,4 +1,4 @@
-import { Message } from "./Message";
+import { Message } from "./Conversation";
 
 /**
  * Statistics about the messages in the history.
@@ -109,10 +109,7 @@ export class ConversationHistory {
    * @returns The JSON-serializable object.
    */
   toJSON(): ReadonlyArray<Message> {
-    return this.messages.map((message) => ({
-      actor: message.actor,
-      text: message.text,
-    }));
+    return this.messages;
   }
 
   /**

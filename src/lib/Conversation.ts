@@ -3,6 +3,26 @@ import { Actor, ContextData } from "./Actor";
 import { IndexScheduler, Scheduler } from "./Scheduler";
 
 /**
+ * A function that generates text given a prompt.
+ * @param prompt The prompt to generate text from.
+ * @returns The generated text.
+ */
+export type GenerateText = (prompt: string) => Promise<string>;
+
+/**
+ * A message in a conversation. Messages are used to communicate between actors
+ * in a conversation. Messages are immutable.
+ */
+export interface Message {
+  /** The actor that sent the message. */
+  readonly actor: string;
+  /** The text of the message. */
+  readonly text: string;
+  /** The embeddings of the message. Embeddings are used to determine the similarity between messages. */
+  readonly embeddings?: number[];
+}
+
+/**
  * Response from an actor's turn. The response contains the actor that spoke,
  * and the text that they spoke.
  */
@@ -144,7 +164,7 @@ export class Conversation {
     speaker: Actor;
     answerer: Actor;
     query: string;
-    generateText: (prompt: string) => Promise<string>;
+    generateText: GenerateText;
     store?: boolean;
   }): Promise<TurnResponse> {
     const message = {
@@ -182,7 +202,7 @@ export class Conversation {
    * @returns The speaker and the response.
    */
   async turn({ generateText }: {
-    generateText: (prompt: string) => Promise<string>;
+    generateText: GenerateText;
   }): Promise<TurnResponse> {
     const speaker = this.scheduler.getNextSpeaker();
     const prompt = speaker.render(this.history.messages);
@@ -210,7 +230,7 @@ export class Conversation {
    */
   async *loop({ signal, generateText }: {
     signal: AbortSignal;
-    generateText: (prompt: string) => Promise<string>;
+    generateText: GenerateText;
   }) {
     while (!signal.aborted) {
       yield this.turn({ generateText });

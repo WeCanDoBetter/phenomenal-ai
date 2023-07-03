@@ -1,6 +1,6 @@
 import { readFileSync } from "fs";
 import { render } from "mustache";
-import { Message } from "./Message";
+import { Message } from "./Conversation";
 import { reduce } from "../util";
 
 const DEFAULT_TEMPLATE_URL = new URL(
