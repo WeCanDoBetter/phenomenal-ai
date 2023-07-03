@@ -129,6 +129,7 @@ export class Actor {
    * This method is a static method that can be used to render the prompt of an
    * actor without creating an instance of the actor.
    *
+   * @param name The name of the actor.
    * @param template The template to render with.
    * @param context The context of the actor.
    * @param persona The persona of the actor.
@@ -136,15 +137,19 @@ export class Actor {
    * @param memory The memory of the actor.
    * @param messages The messages to render with.
    */
-  static render({ template, context, persona, knowledge, memory, messages }: {
-    template: string;
-    context: ActorContext;
-    persona: ActorPersona;
-    knowledge: ActorKnowledge;
-    memory: ActorMemory;
-    messages: Message[];
-  }): string {
+  static render(
+    { name, template, context, persona, knowledge, memory, messages }: {
+      name: string;
+      template: string;
+      context: ActorContext;
+      persona: ActorPersona;
+      knowledge: ActorKnowledge;
+      memory: ActorMemory;
+      messages: Message[];
+    },
+  ): string {
     return render(template, {
+      name,
       context: reduce(context),
       persona: reduce(persona),
       knowledge: reduce(knowledge),
@@ -250,6 +255,7 @@ export class Actor {
    */
   render(messages: Message[]): string {
     return Actor.render({
+      name: this.name,
       template: this.template,
       context: this.context,
       persona: this.persona,
