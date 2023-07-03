@@ -124,14 +124,47 @@ export class Conversation {
   }
 
   /**
-   * Push a message to the history of the conversation. The message is shared
-   * between all actors in the conversation, and is used to store information
-   * about the conversation.
-   * @param actor The name of the actor that sent the message.
-   * @param text The text of the message.
+   * Query the conversation. This allows an actor to ask a question to another
+   * actor in the conversation. The speaker is the actor that is asking the
+   * question, and the answerer is the actor that is being asked the question.
+   * The query is the question that is being asked.
+   *
+   * The query doesn't have to be a question. It can be any text that the
+   * answerer should respond or react to. The query is used as a prompt to
+   * generate a response from the answerer.
+   *
+   * @param speaker The actor that is speaking.
+   * @param answerer The actor that is being spoken to.
+   * @param query The query to ask.
+   * @param generateText A function that generates text given a prompt.
+   * @param store Whether to store the response in the conversation history.
+   * @returns The speaker and the response.
    */
-  push(actor: string, text: string): void {
-    this.history.push(actor, text);
+  async query({ speaker, answerer, query, generateText, store = false }: {
+    speaker: Actor;
+    answerer: Actor;
+    query: string;
+    generateText: (prompt: string) => Promise<string>;
+    store?: boolean;
+  }): Promise<TurnResponse> {
+    const message = {
+      actor: speaker.name,
+      text: query,
+    };
+
+    const prompt = answerer.render([
+      ...this.history.messages,
+      message,
+    ]);
+
+    const text = await generateText(prompt);
+
+    if (store) {
+      this.history.push(speaker.name, query);
+      this.history.push(answerer.name, text);
+    }
+
+    return { speaker, text };
   }
 
   /**
