@@ -55,14 +55,31 @@ let actors: Actor[] = [
 ];
 
 // Initialize a conversation
-let conversation = new Conversation("Morning Talk", actors);
+const conversation = new Conversation("Morning Talk", actors);
 
 // Add a context entry
 conversation.context.add("topic", "Current topic of conversation", "AI Ethics");
 
+// Make a query:
+
+const response = await conversation.query({
+  speaker: actors[0], // the speaker, i.e. the actor asking the question
+  answerer: actors[1], // the answerer, i.e. the actor answering the question
+  query: "What is the topic of conversation?", // the query to be answered
+  generateText, // provide your own text generation function
+  store: true, // store the response in the history
+});
+
+console.log(`${response.speaker.name}: ${response.text}`);
+
+// Moderate the conversation:
+
+conversation.moderate("Let's get back to the topic of conversation.");
+
 // Make one turn:
 
 const turn = await conversation.turn({
+  actor: conversation.scheduler.getNextSpeaker(), // get the next speaker from the scheduler
   generateText, // provide your own text generation function
 });
 
@@ -74,7 +91,7 @@ const ac = new AbortController();
 
 for await (
   const turn of conversation.loop({
-    signal: ac.signal,
+    signal: ac.signal, // provide an AbortSignal to stop the loop
     generateText, // provide your own text generation function
   })
 ) {

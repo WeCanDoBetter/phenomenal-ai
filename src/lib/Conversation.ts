@@ -198,25 +198,20 @@ export class Conversation {
   }
 
   /**
-   * Turn the conversation. The conversation is responsible for scheduling the
-   * turns of the actors. The conversation can be configured with a scheduler,
-   * which is responsible for determining which actor should speak next.
-   *
-   * The conversation is also responsible for keeping track of the history of
-   * the conversation, and for providing a context to the actors. The context is
-   * shared between all actors, and is used to store information about the
+   * Turn the conversation. This allows an actor to speak in the conversation.
+   * The actor is responsible for generating a response given the history of
+   * the conversation. The response is used to update the history of the
    * conversation.
    *
-   * @param options The options for turning the conversation.
-   * @param options.generateText A function that generates text given a prompt.
-   * @param options.actor The actor that should speak next.
+   * @param actor The actor that should speak next.
+   * @param generateText A function that generates text given a prompt.
    * @returns The speaker and the response.
    */
   async turn({ generateText, actor }: {
+    actor: Actor;
     generateText: GenerateText;
-    actor?: Actor;
   }): Promise<TurnResponse> {
-    const speaker = actor ?? this.scheduler.getNextSpeaker();
+    const speaker = actor;
     const prompt = speaker.render(this.history.messages);
     const text = await generateText(prompt);
 
@@ -225,27 +220,21 @@ export class Conversation {
   }
 
   /**
-   * Turn the conversation in a loop. The conversation is responsible for
-   * scheduling the turns of the actors. The conversation can be configured with
-   * a scheduler, which is responsible for determining which actor should speak
-   * next.
+   * Loop the conversation. The scheduler is used to determine which actor
+   * should speak next. The conversation is aborted when the signal is aborted.
    *
-   * The conversation is also responsible for keeping track of the history of
-   * the conversation, and for providing a context to the actors. The context is
-   * shared between all actors, and is used to store information about the
-   * conversation.
-   *
-   * @param options The options for turning the conversation.
-   * @param options.signal The signal to abort the conversation.
-   * @param options.generateText A function that generates text given a prompt.
-   * @returns An async generator that yields the speaker and the response.
+   * @param signal The signal to abort the conversation.
+   * @param generateText A function that generates text given a prompt.
    */
   async *loop({ signal, generateText }: {
     signal: AbortSignal;
     generateText: GenerateText;
-  }) {
+  }): AsyncGenerator<TurnResponse> {
     while (!signal.aborted) {
-      yield this.turn({ generateText });
+      yield this.turn({
+        generateText,
+        actor: this.scheduler.getNextSpeaker(),
+      });
     }
   }
 }
