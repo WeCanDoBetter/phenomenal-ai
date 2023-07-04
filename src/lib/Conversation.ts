@@ -188,6 +188,16 @@ export class Conversation {
   }
 
   /**
+   * Moderate the conversation. This method adds a message to the conversation
+   * history under the `Moderator` actor. This can be used to steer the
+   * conversation in a certain direction.
+   * @param text The text to add to the conversation history.
+   */
+  moderate(text: string) {
+    this.history.push("Moderator", text);
+  }
+
+  /**
    * Turn the conversation. The conversation is responsible for scheduling the
    * turns of the actors. The conversation can be configured with a scheduler,
    * which is responsible for determining which actor should speak next.
