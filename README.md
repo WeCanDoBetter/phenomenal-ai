@@ -83,7 +83,7 @@ const turn = await conversation.turn({
   generateText, // provide your own text generation function
 });
 
-console.log(`${turn.speaker.name}: ${turn.response}`);
+console.log(`${turn.speaker.name}: ${turn.text}`);
 
 // or use an async generator:
 
@@ -95,7 +95,7 @@ for await (
     generateText, // provide your own text generation function
   })
 ) {
-  console.log(`${turn.speaker.name}: ${turn.response}`);
+  console.log(`${turn.speaker.name}: ${turn.text}`);
 }
 ```
 
@@ -120,13 +120,14 @@ actors.
 
 - `constructor(name: string, actors: Actor[])`: Initializes a new instance of
   the Conversation class.
-- `push(actor: string, text: string)`: Add a new message to the history.
-- `query(options: { speaker, answerer, query, generateText, store = false })`:
+- `moderate(text: string, speaker?: string)`: Add a new message to the history
+  and set the speaker.
+- `query({ speaker: Actor, answerer: Actor, query, generateText: GenerateText, store = false })`:
   Returns a promise that resolves to a turn response.
-- `turn(options: { generateText: (prompt: string) => Promise<string>; })`:
-  Returns a promise that resolves to a turn response.
-- `loop(options: { signal: AbortSignal; generateText: (prompt: string) => Promise<string>; })`:
-  An async generator that yields the speaker and the response.
+- `turn({ generateText: GenerateText })`: Returns a promise that resolves to a
+  turn response.
+- `loop({ signal: AbortSignal; generateText: GenerateText })`: An async
+  generator that yields the speaker and the response.
 
 ### ConversationHistory
 
