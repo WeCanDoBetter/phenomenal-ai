@@ -261,7 +261,7 @@ export class Conversation {
    * will be removed from the history after the next turn.
    * @param text The text of the message.
    * @param speaker The name of the actor that is speaking. If no speaker is
-   * provided, the value will be `Moderator`.
+   * provided, the value will be `System`.
    * @param embeddings The embeddings of the message. Embeddings are used to
    * determine the similarity between messages.
    * @param ephemeral Whether the message is ephemeral. By default the message
@@ -269,14 +269,14 @@ export class Conversation {
    */
   inject(
     text: string,
-    { speaker, embeddings, ephemeral }: {
-      speaker?: string;
+    { speaker = "System", embeddings, ephemeral }: {
+      speaker?: string | Actor;
       embeddings?: number[];
       ephemeral?: true;
     },
   ) {
     this.history.push({
-      actor: speaker ?? "Moderator",
+      actor: typeof speaker === "string" ? speaker : speaker.name,
       text,
       embeddings,
       ephemeral,

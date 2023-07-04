@@ -88,12 +88,12 @@ const response = await conversation.query({
   store: true, // store the response in the history
 });
 
-console.log(`${response.speaker.name}: ${response.text}`);
+console.log(`${response.speaker}: ${response.text}`);
 
 // Moderate the conversation by injecting a new message:
 
 conversation.inject("Let's get back to the topic of conversation.", {
-  speaker: "Moderator",
+  speaker: "Moderator", // the speaker of the message (defaults to `System`)
   ephemeral: true, // this message will not be stored in the history
 });
 
@@ -104,19 +104,20 @@ const turn = await conversation.turn({
   generateText, // provide your own text generation function
 });
 
-console.log(`${turn.speaker.name}: ${turn.text}`);
+console.log(`${turn.speaker}: ${turn.text}`);
 
 // or use an async generator:
 
 const ac = new AbortController();
 
-for await (
-  const turn of conversation.loop({
-    signal: ac.signal, // provide an AbortSignal to stop the loop
-    generateText, // provide your own text generation function
-  })
-) {
-  console.log(`${turn.speaker.name}: ${turn.text}`);
+const loop = conversation.loop({
+  signal: ac.signal, // provide an AbortSignal to stop the loop
+  generateText, // provide your own text generation function
+  scheduler: conversation.scheduler, // provide your own scheduler
+});
+
+for await (const turn of loop) {
+  console.log(`${turn.speaker}: ${turn.text}`);
 }
 ```
 
