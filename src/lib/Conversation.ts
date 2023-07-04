@@ -42,8 +42,10 @@ export interface Message {
  * and the text that they spoke.
  */
 export interface TurnResponse {
+  /** The speaker of the turn. */
+  speaker: string;
   /** The actor that spoke. */
-  speaker: Actor;
+  actor?: Actor;
   /** The text that the actor spoke. */
   text: string;
   /** The embeddings of the text that the actor spoke. */
@@ -211,7 +213,7 @@ export class Conversation {
       generateText = this.generateText,
       store = false,
     }: {
-      speaker: Actor;
+      speaker: Actor | string;
       answerer: Actor;
       query: string;
       generateText?: GenerateText;
@@ -223,7 +225,7 @@ export class Conversation {
     }
 
     const message: Omit<Message, "feedback"> = {
-      actor: speaker.name,
+      actor: typeof speaker === "string" ? speaker : speaker.name,
       text: query,
       ephemeral: true,
     };
@@ -236,11 +238,20 @@ export class Conversation {
     this.history.cleanEphemeral();
 
     if (store) {
-      this.history.push({ actor: speaker.name, text: query });
+      this.history.push({
+        actor: typeof speaker === "string" ? speaker : speaker.name,
+        text: query,
+      });
       this.history.push({ actor: answerer.name, text, embeddings });
     }
 
-    return { speaker, text };
+    return {
+      speaker: typeof speaker === "string" ? speaker : speaker.name,
+      actor: speaker instanceof Actor
+        ? speaker
+        : this.actors.find((actor) => actor.name === speaker),
+      text,
+    };
   }
 
   /**
@@ -307,7 +318,13 @@ export class Conversation {
 
     this.history.push({ actor: speaker.name, text, embeddings });
     this.history.cleanEphemeral();
-    return { speaker, text, embeddings };
+
+    return {
+      speaker: speaker.name,
+      actor: speaker,
+      text,
+      embeddings,
+    };
   }
 
   /**
