@@ -192,9 +192,11 @@ export class Conversation {
    * history under the `Moderator` actor. This can be used to steer the
    * conversation in a certain direction.
    * @param text The text to add to the conversation history.
+   * @param name The name of the actor that is moderating the conversation. The
+   * default value is `Moderator`.
    */
-  moderate(text: string) {
-    this.history.push("Moderator", text);
+  moderate(text: string, name = "Moderator") {
+    this.history.push(name, text);
   }
 
   /**
@@ -203,15 +205,15 @@ export class Conversation {
    * the conversation. The response is used to update the history of the
    * conversation.
    *
-   * @param actor The actor that should speak next.
+   * @param speaker The actor that is speaking. If no speaker is provided, the
+   * scheduler is used to determine which actor should speak next.
    * @param generateText A function that generates text given a prompt.
    * @returns The speaker and the response.
    */
-  async turn({ generateText, actor }: {
-    actor: Actor;
+  async turn({ generateText, speaker = this.scheduler.getNextSpeaker() }: {
+    speaker?: Actor;
     generateText: GenerateText;
   }): Promise<TurnResponse> {
-    const speaker = actor;
     const prompt = speaker.render(this.history.messages);
     const text = await generateText(prompt);
 
@@ -225,15 +227,25 @@ export class Conversation {
    *
    * @param signal The signal to abort the conversation.
    * @param generateText A function that generates text given a prompt.
+   * @param scheduler The scheduler to determine which actor should speak next. If
+   * no scheduler is provided, the conversation scheduler is used.
+   * @returns The speaker and the response.
    */
-  async *loop({ signal, generateText }: {
+  async *loop({ signal, generateText, scheduler = this.scheduler }: {
     signal: AbortSignal;
     generateText: GenerateText;
+    scheduler?: Scheduler;
   }): AsyncGenerator<TurnResponse> {
+    if (scheduler.conversation !== this) {
+      throw new Error(
+        "The scheduler is not associated with this conversation.",
+      );
+    }
+
     while (!signal.aborted) {
       yield this.turn({
         generateText,
-        actor: this.scheduler.getNextSpeaker(),
+        speaker: scheduler.getNextSpeaker(),
       });
     }
   }

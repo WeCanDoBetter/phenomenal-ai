@@ -7,7 +7,7 @@ import { Actor } from "./Actor";
  */
 export class Scheduler {
   /** The conversation that the scheduler is used in. */
-  protected readonly conversation: Conversation;
+  readonly conversation: Conversation;
 
   /**
    * Create a new scheduler.
