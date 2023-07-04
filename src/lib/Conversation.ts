@@ -33,6 +33,8 @@ export interface Message {
   readonly feedback: [up: number, down: number];
   /** The embeddings of the message. Embeddings are used to determine the similarity between messages. */
   readonly embeddings?: number[];
+  /** Whether the message is ephemeral. Ephemeral messages are removed from the history after a turn. */
+  readonly ephemeral?: boolean;
 }
 
 /**
@@ -68,19 +70,23 @@ export class Conversation {
   readonly actors: Actor[];
   /** The history of the conversation. */
   readonly history = new ConversationHistory();
+  /** The function that generates text. */
+  readonly generateText?: GenerateText;
   /** The scheduler of the conversation. */
   readonly scheduler: Scheduler;
 
   constructor(
     name: string,
-    { actors, scheduler, messages }: {
+    { actors, generateText, scheduler, messages }: {
       actors: Actor[];
+      generateText?: GenerateText;
       scheduler?: typeof Scheduler;
       messages?: Message[];
     },
   ) {
     this.name = name;
     this.actors = actors;
+    this.generateText = generateText;
     this.scheduler = new (scheduler ?? IndexScheduler)(this);
 
     if (messages?.length) {
@@ -184,25 +190,42 @@ export class Conversation {
    * @param store Whether to store the response in the conversation history.
    * @returns The speaker and the response.
    */
-  async query({ speaker, answerer, query, generateText, store = false }: {
-    speaker: Actor;
-    answerer: Actor;
-    query: string;
-    generateText: GenerateText;
-    store?: boolean;
-  }): Promise<TurnResponse> {
+  async query(
+    {
+      speaker,
+      answerer,
+      query,
+      generateText = this.generateText,
+      store = false,
+    }: {
+      speaker: Actor;
+      answerer: Actor;
+      query: string;
+      generateText?: GenerateText;
+      store?: boolean;
+    },
+  ): Promise<TurnResponse> {
+    if (!generateText) {
+      throw new Error("No 'generateText' function provided");
+    }
+
     const message: Message = {
       actor: speaker.name,
       text: query,
       feedback: [0, 0],
     };
 
+    this.history.push(message);
+
     const prompt = answerer.render(this);
     const { text, embeddings } = await generateText(prompt);
 
     if (store) {
-      this.history.push({ actor: speaker.name, text: query });
+      // Store the response in the conversation history.
       this.history.push({ actor: answerer.name, text, embeddings });
+    } else {
+      // Remove the query from the conversation history.
+      this.history.messages.pop();
     }
 
     return { speaker, text };
@@ -232,10 +255,19 @@ export class Conversation {
    * @param generateText A function that generates text given a prompt.
    * @returns The speaker and the response.
    */
-  async turn({ generateText, speaker = this.scheduler.getNextSpeaker() }: {
-    speaker?: Actor;
-    generateText: GenerateText;
-  }): Promise<TurnResponse> {
+  async turn(
+    {
+      generateText = this.generateText,
+      speaker = this.scheduler.getNextSpeaker(),
+    }: {
+      speaker?: Actor;
+      generateText?: GenerateText;
+    },
+  ): Promise<TurnResponse> {
+    if (!generateText) {
+      throw new Error("No 'generateText' function provided");
+    }
+
     if (this.scheduler.conversation !== this) {
       throw new TypeError(
         "The scheduler is not assigned to this conversation.",
@@ -259,11 +291,17 @@ export class Conversation {
    * no scheduler is provided, the conversation scheduler is used.
    * @returns The speaker and the response.
    */
-  async *loop({ signal, generateText, scheduler = this.scheduler }: {
-    signal: AbortSignal;
-    generateText: GenerateText;
-    scheduler?: Scheduler;
-  }): AsyncGenerator<TurnResponse> {
+  async *loop(
+    { signal, generateText = this.generateText, scheduler = this.scheduler }: {
+      signal: AbortSignal;
+      generateText?: GenerateText;
+      scheduler?: Scheduler;
+    },
+  ): AsyncGenerator<TurnResponse> {
+    if (!generateText) {
+      throw new Error("No 'generateText' function provided");
+    }
+
     if (scheduler.conversation !== this) {
       throw new TypeError(
         "The scheduler is not associated with this conversation.",
