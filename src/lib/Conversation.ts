@@ -75,13 +75,18 @@ export class Conversation {
   /** The scheduler of the conversation. */
   readonly scheduler: Scheduler;
 
+  historyWindow: number | undefined;
+
   constructor(
     name: string,
-    { actors, generateText, scheduler = IndexScheduler, messages }: {
+    { actors, generateText, scheduler = IndexScheduler, messages, windows }: {
       actors: Actor[];
       generateText?: GenerateText;
       scheduler?: typeof Scheduler;
       messages?: Message[];
+      windows?: {
+        history?: number;
+      };
     },
   ) {
     this.name = name;
@@ -91,6 +96,14 @@ export class Conversation {
 
     if (messages?.length) {
       this.history.messages.push(...messages);
+    }
+
+    if (windows?.history) {
+      if (windows.history < 0) {
+        throw new Error("History window cannot be negative");
+      }
+
+      this.historyWindow = windows.history;
     }
   }
 

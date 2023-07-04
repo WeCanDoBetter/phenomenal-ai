@@ -24,7 +24,7 @@ context and the scheduling of actor's turns.
 - 💾 **Shared Context**: Actors in a conversation share a context that allows
   them to store and retrieve information relevant to the ongoing discussion. The
   context can be used to store information such as the topic of conversation,
-  etc.
+  the location, the time of day, etc.
 - 🔄 **Scheduling**: The package provides a mechanism to decide the order of
   turns between the actors using schedulers. The package comes with a default
   scheduler that schedules turns in a round-robin fashion.
@@ -32,9 +32,19 @@ context and the scheduling of actor's turns.
   conversation and provides a method to inject new messages into the
   conversation. The package also provides a method to query the conversation
   with a question and get a response.
+- 📜 **Context Window Management**: The package provides a mechanism to manage
+  the context window. The context window is the number of tokens to unmask in
+  the history when generating a response. This allows you to control the prompt
+  size and the amount of context provided to the model.
 - ✨ **High-Level Abstraction**: Phenomenal AI provides a high level of
   abstraction for AI-based conversation models. This allows you to focus on the
   conversation logic and not the underlying model.
+- 📝 **TypeScript**: The package is written in TypeScript and provides type
+  definitions.
+- 📦 **Lightweight**: The package has only one external dependency (`mustache`),
+  making it lightweight and easy to use.
+- 🧪 **Extensible**: The package is designed to be extensible. You can provide
+  your own text generation function, scheduler, etc.
 
 ## 🏁 Getting Started
 
@@ -131,7 +141,7 @@ actors.
 
 These are the methods available on the `Conversation` class.
 
-##### `new Conversation(name: string, { actors: Actor[], generateText: GenerateText, scheduler?: Scheduler, messages?: Message[] })`
+##### `new Conversation(name: string, { actors: Actor[], generateText?: GenerateText, scheduler?: Scheduler, messages?: Message[], widnows?: { history?: number } })`
 
 Initializes a new instance of the `Conversation` class.
 
@@ -144,6 +154,9 @@ const conversation = new Conversation("Morning Talk", {
   generateText: generateText, // provide your own text generation function
   scheduler: IndexScheduler, // provide your own scheduler
   messages: [], // bootstrap the conversation with messages
+  window: { // configure the conversation window
+    history: 1024, // the maximum number of tokens to unmask in the history
+  },
 });
 ```
 

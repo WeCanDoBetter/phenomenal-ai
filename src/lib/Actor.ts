@@ -1,7 +1,7 @@
 import { readFileSync } from "fs";
 import { render } from "mustache";
 import { Conversation, Message } from "./Conversation";
-import { reduce } from "../util";
+import { mask, reduce } from "../util";
 
 const DEFAULT_TEMPLATE_URL = new URL(
   "../../templates/actor.mustache",
@@ -283,7 +283,9 @@ export class Actor {
       persona: this.persona,
       knowledge: this.knowledge,
       memory: this.memory,
-      messages: conversation.history.messages,
+      messages: conversation.historyWindow
+        ? mask(conversation.history.messages, conversation.historyWindow)
+        : conversation.history.messages,
     });
   }
 
