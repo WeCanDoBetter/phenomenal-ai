@@ -43,7 +43,7 @@ export class ConversationHistory {
    * determine the similarity between messages.
    */
   push(actor: string, text: string, embeddings?: number[]): void {
-    this.messages.push({ actor, text, embeddings });
+    this.messages.push({ actor, text, embeddings, feedback: [0, 0] });
   }
 
   /**
@@ -88,6 +88,30 @@ export class ConversationHistory {
     }
 
     return stats;
+  }
+
+  /**
+   * Add positive feedback to a message.
+   * @param message The message to add feedback to.
+   */
+  up(message: Message) {
+    if (!this.messages.includes(message)) {
+      throw new Error("Message not found");
+    }
+
+    message.feedback[0]++;
+  }
+
+  /**
+   * Add negative feedback to a message.
+   * @param message The message to add feedback to.
+   */
+  down(message: Message) {
+    if (!this.messages.includes(message)) {
+      throw new Error("Message not found");
+    }
+
+    message.feedback[1]++;
   }
 
   /**

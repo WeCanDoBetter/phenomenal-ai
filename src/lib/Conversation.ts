@@ -18,6 +18,8 @@ export interface Message {
   readonly actor: string;
   /** The text of the message. */
   readonly text: string;
+  /** The feedback of the message. Feedback is used to fine-tune the model. */
+  readonly feedback: [up: number, down: number];
   /** The embeddings of the message. Embeddings are used to determine the similarity between messages. */
   readonly embeddings?: number[];
 }
@@ -167,9 +169,10 @@ export class Conversation {
     generateText: GenerateText;
     store?: boolean;
   }): Promise<TurnResponse> {
-    const message = {
+    const message: Message = {
       actor: speaker.name,
       text: query,
+      feedback: [0, 0],
     };
 
     const prompt = answerer.render([
