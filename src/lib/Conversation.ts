@@ -3,11 +3,22 @@ import { Actor, ContextData } from "./Actor";
 import { IndexScheduler, Scheduler } from "./Scheduler";
 
 /**
+ * A response from the model. The response contains the text that the model
+ * generated, and the embeddings of the text.
+ */
+export interface GenerateTextResult {
+  /** The text that the model generated. */
+  text: string;
+  /** The embeddings of the text that the model generated. */
+  embeddings?: number[];
+}
+
+/**
  * A function that generates text given a prompt.
  * @param prompt The prompt to generate text from.
- * @returns The generated text.
+ * @returns The generated text with optional embeddings.
  */
-export type GenerateText = (prompt: string) => Promise<string>;
+export type GenerateText = (prompt: string) => Promise<GenerateTextResult>;
 
 /**
  * A message in a conversation. Messages are used to communicate between actors
@@ -191,11 +202,11 @@ export class Conversation {
       message,
     ]);
 
-    const text = await generateText(prompt);
+    const { text, embeddings } = await generateText(prompt);
 
     if (store) {
       this.history.push(speaker.name, query);
-      this.history.push(answerer.name, text);
+      this.history.push(answerer.name, text, embeddings);
     }
 
     return { speaker, text };
@@ -230,10 +241,10 @@ export class Conversation {
     generateText: GenerateText;
   }): Promise<TurnResponse> {
     const prompt = speaker.render(this.history.messages);
-    const text = await generateText(prompt);
+    const { text, embeddings } = await generateText(prompt);
 
-    this.history.push(speaker.name, text);
-    return { speaker, text };
+    this.history.push(speaker.name, text, embeddings);
+    return { speaker, text, embeddings };
   }
 
   /**
@@ -259,8 +270,8 @@ export class Conversation {
 
     while (!signal.aborted) {
       yield this.turn({
-        generateText,
         speaker: scheduler.getNextSpeaker(),
+        generateText,
       });
     }
   }
