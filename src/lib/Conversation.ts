@@ -209,12 +209,14 @@ export class Conversation {
    *
    * @param options The options for turning the conversation.
    * @param options.generateText A function that generates text given a prompt.
+   * @param options.actor The actor that should speak next.
    * @returns The speaker and the response.
    */
-  async turn({ generateText }: {
+  async turn({ generateText, actor }: {
     generateText: GenerateText;
+    actor?: Actor;
   }): Promise<TurnResponse> {
-    const speaker = this.scheduler.getNextSpeaker();
+    const speaker = actor ?? this.scheduler.getNextSpeaker();
     const prompt = speaker.render(this.history.messages);
     const text = await generateText(prompt);
 
