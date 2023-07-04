@@ -296,21 +296,15 @@ export class Conversation {
    */
   async turn(
     {
-      generateText = this.generateText,
       speaker = this.scheduler.getNextSpeaker(),
+      generateText = this.generateText,
     }: {
       speaker?: Actor;
       generateText?: GenerateText;
     },
   ): Promise<TurnResponse> {
     if (!generateText) {
-      throw new Error("No 'generateText' function provided");
-    }
-
-    if (this.scheduler.conversation !== this) {
-      throw new TypeError(
-        "The scheduler is not assigned to this conversation.",
-      );
+      throw new TypeError("No 'generateText' function provided");
     }
 
     const prompt = speaker.render(this);
@@ -345,7 +339,7 @@ export class Conversation {
     },
   ): AsyncGenerator<TurnResponse> {
     if (!generateText) {
-      throw new Error("No 'generateText' function provided");
+      throw new TypeError("No 'generateText' function provided");
     }
 
     if (scheduler.conversation !== this) {
