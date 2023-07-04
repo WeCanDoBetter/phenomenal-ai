@@ -1,6 +1,11 @@
 import { Message } from "./Conversation";
 
 /**
+ * Make some properties of an object optional.
+ */
+export type PartialBy<T, K extends keyof T> = Omit<T, K> & Partial<Pick<T, K>>;
+
+/**
  * Statistics about the messages in the history.
  */
 export interface HistoryStats {
@@ -69,14 +74,14 @@ export class ConversationHistory {
     let textTotal = 0;
 
     for (const message of this.messages) {
-      total++;
-      textTotal += message.text.length;
-
       stats[message.actor] = {
         ...stats[message.actor] ?? {},
         count: (stats[message.actor]?.count ?? 0) + 1,
         textCount: (stats[message.actor]?.textCount ?? 0) + message.text.length,
       };
+
+      total++;
+      textTotal += message.text.length;
     }
 
     for (const actor in stats) {
@@ -93,19 +98,11 @@ export class ConversationHistory {
    * for a single turn.
    */
   cleanEphemeral(): void {
-    const messages = this.messages.reduce(
-      (indexes, message, index) => {
-        if (message.ephemeral) {
-          indexes.push(index);
-        }
-        return indexes;
-      },
-      [] as number[],
-    );
+    const messages = this.messages.filter((message) => message.ephemeral);
 
     if (messages.length) {
-      for (const index of messages) {
-        this.messages.splice(index, 1);
+      for (const message of messages) {
+        this.messages.splice(this.messages.indexOf(message), 1);
       }
     }
   }
@@ -116,7 +113,7 @@ export class ConversationHistory {
    */
   up(message: Message) {
     if (!this.messages.includes(message)) {
-      throw new Error("Message not found");
+      throw new TypeError("Message not found");
     }
 
     message.feedback[0]++;
@@ -128,7 +125,7 @@ export class ConversationHistory {
    */
   down(message: Message) {
     if (!this.messages.includes(message)) {
-      throw new Error("Message not found");
+      throw new TypeError("Message not found");
     }
 
     message.feedback[1]++;
@@ -164,5 +161,3 @@ export class ConversationHistory {
     this.messages.length = 0;
   }
 }
-
-export type PartialBy<T, K extends keyof T> = Omit<T, K> & Partial<Pick<T, K>>;

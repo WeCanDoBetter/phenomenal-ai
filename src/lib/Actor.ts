@@ -59,8 +59,7 @@ export enum PersonaType {
   Belief = "belief",
   /** An identity is the fact of being who or what a person or thing is. */
   Identity = "identity",
-  /** A role is an actor's portrayal of a character in a play, movie, or other
-   * entertainment medium. */
+  /** A role is an actor's role in the context of a conversation. */
   Role = "role",
   /** A relationship is the way in which two or more people or organizations
    * regard and behave toward each other. */
@@ -241,7 +240,7 @@ export class Actor {
   /**
    * Render the actor's prompt. The prompt is generated from the actor's
    * template. The prompt is generated using the actor's context, persona,
-   * knowledge, memory, and messages.
+   * knowledge, memory, and the message history of the conversation.
    * @param conversation The conversation to render with.
    * @returns The rendered prompt.
    */
