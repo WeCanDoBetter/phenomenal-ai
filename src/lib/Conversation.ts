@@ -115,8 +115,8 @@ export class Conversation {
     }
 
     if (typeof windows?.history === "number") {
-      if (windows.history < 0) {
-        throw new Error("History window cannot be negative");
+      if (windows.history < 1) {
+        throw new Error("History window cannot be less than 1.");
       }
 
       this.historyWindow = windows.history;

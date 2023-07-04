@@ -59,3 +59,30 @@ export function mask(messages: Message[], window: number): Message[] {
 
   return unmasked.reverse();
 }
+
+/**
+ * Get the dot product of two vectors.
+ * @param x The first vector.
+ * @param y The second vector.
+ * @returns The dot product of the two vectors.
+ */
+export function dotProduct(x: number[], y: number[]): number {
+  return x.map((value, index) => value * y[index]).reduce((a, b) => a + b, 0);
+}
+
+/**
+ * Get the cosine similarity of two vectors. The cosine similarity is a measure
+ * of similarity between two vectors. The similarity value is a number between
+ * -1 and 1. A value of 1 means the vectors are identical. A value of -1 means
+ * the vectors are opposite. A value of 0 means the vectors are orthogonal.
+ * @param a The first vector.
+ * @param b The second vector.
+ * @returns The cosine similarity of the two vectors.
+ */
+export function cosineSimilarity(a: number[], b: number[]): number {
+  const dotProductAB = dotProduct(a, b);
+  const magnitudeA = Math.sqrt(dotProduct(a, a));
+  const magnitudeB = Math.sqrt(dotProduct(b, b));
+  const similarity = dotProductAB / (magnitudeA * magnitudeB);
+  return similarity;
+}

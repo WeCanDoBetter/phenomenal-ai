@@ -10,9 +10,6 @@ entities, referred to as actors. Actors can share information, engage in
 dialogue, and dynamically adjust the course of conversation based on predefined
 rules.
 
-The `Conversation` class encapsulates all actors and manages the history,
-context and the scheduling of actor's turns.
-
 ## 📌 Features
 
 - 🎭 **Multiple Actors**: This package supports interaction between multiple
@@ -61,6 +58,13 @@ yarn add @wecandobetter/phenomenal-ai
 ```
 
 ## 🚀 Usage Examples
+
+The `Conversation` class encapsulates all actors and manages the history,
+context and the scheduling of actor's turns. The `Actor` class represents an
+actor in the conversation.
+
+The following example shows how to use the `Conversation` class to simulate a
+conversation between two actors.
 
 ```typescript
 import { Actor, Conversation } from "@wecandobetter/phenomenal-ai";
@@ -123,7 +127,8 @@ for await (const turn of loop) {
 
 ## 📚 API Reference
 
-The main classes of this package are `Conversation` and `Actor`.
+The main classes of this package are `Conversation`, `ConversationHistory`, and
+`Actor`.
 
 ### Conversation
 
@@ -134,7 +139,7 @@ actors.
 
 - `id`: Unique identifier for the conversation.
 - `name`: Name of the conversation.
-- `actors`: Array of Actors participating in the conversation.
+- `actors`: Array of `Actor`s participating in the conversation.
 - `history`: The history of the conversation.
 - `context`: Shared context between all actors in the conversation.
 
@@ -142,7 +147,7 @@ actors.
 
 These are the methods available on the `Conversation` class.
 
-##### `new Conversation(name: string, { actors: Actor[], generateText?: GenerateText, scheduler?: Scheduler, messages?: Message[], widnows?: { history?: number } })`
+##### `new Conversation(name: string, { actors: Actor[], generateText?: GenerateText, scheduler?: Scheduler, messages?: Message[], windowss?: { history?: number } })`
 
 Initializes a new instance of the `Conversation` class.
 
@@ -155,13 +160,13 @@ const conversation = new Conversation("Morning Talk", {
   generateText: generateText, // provide your own text generation function
   scheduler: IndexScheduler, // provide your own scheduler
   messages: [], // bootstrap the conversation with messages
-  window: { // configure the conversation window
+  windows: { // configure the conversation window
     history: 1024, // the maximum number of tokens to unmask in the history
   },
 });
 ```
 
-##### `conversation.inject(text: string, { speaker?: string, embeddings?: number[], ephemeral?: true })`
+##### `conversation.inject(text: string, { speaker = "System" embeddings?: number[], ephemeral?: true })`
 
 Injects a new message into the conversation. Returns the injected message.
 
@@ -170,12 +175,12 @@ const message = conversation.inject(
   "Let's get back to the topic of conversation.",
   {
     speaker: "Moderator",
-    ephemeral: true, // this message will not be stored in the history
+    ephemeral: true, // if true, the message will not be stored in the history after the next turn
   },
 );
 ```
 
-##### `conversation.query({ speaker: Actor, answerer: Actor, query, generateText: GenerateText, store = false })`
+##### `conversation.query({ speaker: Actor, answerer: Actor, query: string, generateText?: GenerateText, store = false })`
 
 Returns a promise that resolves to a turn response.
 
@@ -188,10 +193,10 @@ const response = await conversation.query({
   store: true, // store the response in the history
 });
 
-console.log(`${response.speaker.name}: ${response.text}`);
+console.log(`${response.speaker}: ${response.text}`);
 ```
 
-##### `conversation.turn({ generateText: GenerateText })`
+##### `conversation.turn({ actor: Actor, generateText?: GenerateText })`
 
 Returns a promise that resolves to a turn response.
 
@@ -201,10 +206,10 @@ const response = await conversation.turn({
   generateText, // provide your own text generation function
 });
 
-console.log(`${response.speaker.name}: ${response.text}`);
+console.log(`${response.speaker}: ${response.text}`);
 ```
 
-##### `conversation.loop({ signal: AbortSignal; generateText: GenerateText })`
+##### `conversation.loop({ signal: AbortSignal; generateText?: GenerateText })`
 
 An async generator that yields the speaker, the text, and optionally the
 embeddings of each turn in the conversation.
@@ -219,7 +224,7 @@ const loop = conversation.loop({
 });
 
 for await (const response of loop) {
-  console.log(`${response.speaker.name}: ${response.text}`);
+  console.log(`${response.speaker}: ${response.text}`);
 }
 ```
 
@@ -249,8 +254,8 @@ Initializes a new instance of the `ConversationHistory` class.
 
 ```typescript
 const history = new ConversationHistory([
-  { actor: "John", text: "Hello, Emma!" },
-  { actor: "Emma", text: "Hi, John!" },
+  { speaker: "John", text: "Hello, Emma!" },
+  { speaker: "Emma", text: "Hi, John!" },
 ]);
 ```
 
@@ -276,6 +281,15 @@ Returns statistics about the history.
 
 ```typescript
 const stats = history.getStats();
+
+console.log(stats);
+
+// {
+//   count: 2,
+//   textCount: 22,
+//   percentage: 0.5,
+//   textPercentage: 0.5,
+// }
 ```
 
 ##### `history.cleanEphemeral()`
@@ -364,17 +378,20 @@ Returns a JSON representation of the actor.
 ## ❤️ Contributing
 
 Pull requests are welcome. For major changes, please open an issue first to
-discuss what you would like to change. Feel free to check
+discuss what you would like to change. Feel free to check the
 [issues page](https://github.com/wecandobetter/phenomenal-ai/issues).
 
 ## 📜 License
 
-This project is licensed under the MIT License.
+This project is licensed under the [MIT License](LICENSE). Feel free to use it
+for your own projects.
 
-## 🙏 Last Notes
+## 🙏 Notes
 
-Happy coding! 😊 If you encounter any problems or have suggestions for
-improvements, feel free to open an issue or a pull request.
+Happy coding! 😊
+
+If you encounter any problems or have suggestions for improvements, feel free to
+open an issue or a pull request.
 
 Give a ⭐️ if you like this project!
 
