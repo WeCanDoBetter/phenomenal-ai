@@ -372,6 +372,9 @@ This project is licensed under the MIT License.
 
 ## 🙏 Last Notes
 
+Happy coding! 😊 If you encounter any problems or have suggestions for
+improvements, feel free to open an issue or a pull request.
+
 Give a ⭐️ if you like this project!
 
 Coded with ❤️ by [We Can Do Better](https://wcdb.life).

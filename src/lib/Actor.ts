@@ -221,46 +221,25 @@ export class Actor {
 
     if (context) {
       for (const [name, data] of Object.entries(context)) {
-        this.context.set(name, {
-          ...data,
-          priority: data.priority ?? 0,
-        });
+        this.context.set(name, data);
       }
     }
 
     if (persona) {
       for (const [type, data] of Object.entries(persona)) {
-        this.persona.set(
-          type as PersonaType,
-          data.map((content) => ({
-            ...content,
-            priority: content.priority ?? 0,
-          })),
-        );
+        this.persona.set(type as PersonaType, data);
       }
     }
 
     if (knowledge) {
       for (const [type, data] of Object.entries(knowledge)) {
-        this.knowledge.set(
-          type as KnowledgeType,
-          data.map((content) => ({
-            ...content,
-            priority: content.priority ?? 0,
-          })),
-        );
+        this.knowledge.set(type as KnowledgeType, data);
       }
     }
 
     if (memory) {
       for (const [type, data] of Object.entries(memory)) {
-        this.memory.set(
-          type as MemoryType,
-          data.map((content) => ({
-            ...content,
-            priority: content.priority ?? 0,
-          })),
-        );
+        this.memory.set(type as MemoryType, data);
       }
     }
   }
