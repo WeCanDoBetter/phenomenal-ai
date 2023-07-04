@@ -39,18 +39,22 @@ export function mask(messages: Message[], window: number): Message[] {
   let totalLength = 0;
 
   // a heuristic to approximate the length of the embeddings
-  // based on OpenAI's notion that 1k tokens is roughly 750 characters (3/4)
-  const heuristic = (message: Message) => (message.text.length / 4) * 3;
+  // based on OpenAI's notion that 1k tokens is roughly 750 words (3/4ths)
+  const heuristic = (message: Message) =>
+    Math.ceil(message.text.split(" ").length * 0.75);
 
-  for (const message of [...messages].reverse()) {
-    // NOTE: Does not account for the length of the actor name yet
-    totalLength += message.embeddings?.length ?? heuristic(message);
+  for (let i = messages.length - 1; i >= 0; i--) {
+    const message = messages[i];
+    const length = message.embeddings
+      ? message.embeddings.length
+      : heuristic(message);
 
-    if (totalLength > window) {
+    if (totalLength + length > window) {
       break;
     }
 
     unmasked.push(message);
+    totalLength += length;
   }
 
   return unmasked.reverse();

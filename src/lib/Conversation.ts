@@ -1,5 +1,5 @@
+import { Actor, type ActorData } from "./Actor";
 import { ConversationHistory } from "./ConversationHistory";
-import { Actor, ContextData } from "./Actor";
 import { IndexScheduler, Scheduler } from "./Scheduler";
 
 /**
@@ -62,6 +62,20 @@ export interface TurnResponse {
  * The conversation is also responsible for scheduling the turns of the actors.
  * The conversation can be configured with a scheduler, which is responsible for
  * determining which actor should speak next.
+ *
+ * @example
+ * Create a conversation with two actors.
+ *
+ * ```ts
+ * import { Actor, Conversation } from "@wecandobetter/phenomenal-ai";
+ *
+ * const conversation = new Conversation("My Conversation", {
+ *  actors: [
+ *    new Actor("Alice"),
+ *    new Actor("Bob"),
+ *  ],
+ * });
+ * ```
  */
 export class Conversation {
   /** A unique identifier for the conversation. */
@@ -100,7 +114,7 @@ export class Conversation {
       this.history.messages.push(...messages);
     }
 
-    if (windows?.history) {
+    if (typeof windows?.history === "number") {
       if (windows.history < 0) {
         throw new Error("History window cannot be negative");
       }
@@ -128,10 +142,10 @@ export class Conversation {
             acc = { ...acc, [name]: data };
           }
           return acc;
-        }, {} as Record<string, ContextData>);
+        }, {} as Record<string, ActorData>);
       },
       /**
-       * Add a new entry to the context. The entry is shared between all actors
+       * Set an  entry on the context. The entry is shared between all actors
        * in the conversation, and is used to store information about the
        * conversation.
        * @param name The name of the entry.
@@ -142,7 +156,7 @@ export class Conversation {
        * @param embeddings The embeddings of the entry. Embeddings are used to
        * determine the similarity between entries.
        */
-      add: (
+      set: (
         name: string,
         description: string,
         value: string,
@@ -177,7 +191,7 @@ export class Conversation {
        * @param name The name of the entry.
        * @returns The entry.
        */
-      get: (name: string): ContextData["value"] | undefined => {
+      get: (name: string): ActorData["value"] | undefined => {
         for (const actor of this.actors) {
           const data = actor.context.get(name);
           if (data) {

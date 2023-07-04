@@ -76,7 +76,7 @@ let actors: Actor[] = [
 const conversation = new Conversation("Morning Talk", { actors });
 
 // Add a context entry
-conversation.context.add("topic", "Current topic of conversation", "AI Ethics");
+conversation.context.set("topic", "Current topic of conversation", "AI Ethics");
 
 // Make a query:
 

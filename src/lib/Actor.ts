@@ -1,6 +1,6 @@
 import { readFileSync } from "fs";
 import { render } from "mustache";
-import { Conversation, Message } from "./Conversation";
+import { Conversation, type Message } from "./Conversation";
 import { mask, reduce } from "../util";
 
 const DEFAULT_TEMPLATE_URL = new URL(
@@ -26,12 +26,6 @@ export interface ActorData<Data = string> {
    * similarity between entries. */
   embeddings?: number[];
 }
-
-export type ContextData = ActorData;
-export type PersonaData = ActorData;
-export type KnowledgeData = ActorData;
-export type MemoryData = ActorData;
-export type ConversationData = ActorData;
 
 /**
  * The type of an actor. The type is used to categorize the actor.
@@ -109,10 +103,10 @@ export enum MemoryType {
   Relationship = "relationship",
 }
 
-export type ActorContext = Map<string, ContextData>;
-export type ActorPersona = Map<PersonaType, PersonaData[]>;
-export type ActorKnowledge = Map<KnowledgeType, KnowledgeData[]>;
-export type ActorMemory = Map<MemoryType, MemoryData[]>;
+export type ActorContext = Map<string, ActorData>;
+export type ActorPersona = Map<PersonaType, ActorData[]>;
+export type ActorKnowledge = Map<KnowledgeType, ActorData[]>;
+export type ActorMemory = Map<MemoryType, ActorData[]>;
 export type ActorConversation = Message[];
 
 /**
@@ -210,10 +204,10 @@ export class Actor {
     name: string,
     { template = DEFAULT_TEMPLATE, context, persona, knowledge, memory }: {
       template?: string;
-      context?: Record<string, ContextData>;
-      persona?: Partial<Record<PersonaType, PersonaData[]>>;
-      knowledge?: Partial<Record<KnowledgeType, KnowledgeData[]>>;
-      memory?: Partial<Record<MemoryType, MemoryData[]>>;
+      context?: Record<string, ActorData>;
+      persona?: Partial<Record<PersonaType, ActorData[]>>;
+      knowledge?: Partial<Record<KnowledgeType, ActorData[]>>;
+      memory?: Partial<Record<MemoryType, ActorData[]>>;
     } = {},
   ) {
     this.name = name;
@@ -248,8 +242,7 @@ export class Actor {
    * Render the actor's prompt. The prompt is generated from the actor's
    * template. The prompt is generated using the actor's context, persona,
    * knowledge, memory, and messages.
-   * @param messages The messages to render with.
-   * @param participants The perticipants in the conversation.
+   * @param conversation The conversation to render with.
    * @returns The rendered prompt.
    */
   render(conversation: Conversation): string {
