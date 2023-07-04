@@ -130,10 +130,11 @@ export class ConversationHistory {
 
   /**
    * Transform the history into a JSON-serializable object.
-   * @returns The JSON-serializable object.
    */
-  toJSON(): ReadonlyArray<Message> {
-    return this.messages;
+  toJSON() {
+    return {
+      messages: this.messages,
+    };
   }
 
   /**

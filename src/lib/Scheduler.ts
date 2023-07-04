@@ -23,6 +23,13 @@ export class Scheduler {
   getNextSpeaker(): Actor {
     throw new Error("Not implemented");
   }
+
+  /**
+   * Transform the scheduler into a JSON-serializable object.
+   */
+  toJSON() {
+    throw new Error("Not implemented");
+  }
 }
 
 /**
@@ -37,5 +44,12 @@ export class IndexScheduler extends Scheduler {
   getNextSpeaker(): Actor {
     return this.conversation
       .actors[this.lastIndex++ % this.conversation.actors.length];
+  }
+
+  toJSON() {
+    return {
+      type: "IndexScheduler",
+      lastIndex: this.lastIndex,
+    };
   }
 }

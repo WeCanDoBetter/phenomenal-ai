@@ -264,4 +264,19 @@ export class Actor {
       messages,
     });
   }
+
+  /**
+   * Transform the actor into a JSON-seralizable object.
+   */
+  toJSON() {
+    return {
+      id: this.id,
+      name: this.name,
+      template: this.template,
+      context: reduce(this.context),
+      persona: reduce(this.persona),
+      knowledge: reduce(this.knowledge),
+      memory: reduce(this.memory),
+    };
+  }
 }

@@ -60,10 +60,21 @@ export class Conversation {
   /** The scheduler of the conversation. */
   readonly scheduler: Scheduler;
 
-  constructor(name: string, actors: Actor[], scheduler?: typeof Scheduler) {
+  constructor(
+    name: string,
+    { actors, scheduler, messages }: {
+      actors: Actor[];
+      scheduler?: typeof Scheduler;
+      messages?: Message[];
+    },
+  ) {
     this.name = name;
     this.actors = actors;
     this.scheduler = new (scheduler ?? IndexScheduler)(this);
+
+    if (messages?.length) {
+      this.history.messages.push(...messages);
+    }
   }
 
   /**
@@ -252,5 +263,16 @@ export class Conversation {
         speaker: scheduler.getNextSpeaker(),
       });
     }
+  }
+
+  /**
+   * Transform the conversation to a JSON-seriazable object.
+   */
+  toJSON() {
+    return {
+      actors: this.actors.map((actor) => actor.toJSON()),
+      history: this.history.toJSON(),
+      scheduler: this.scheduler.toJSON(),
+    };
   }
 }
