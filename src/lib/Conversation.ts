@@ -197,16 +197,12 @@ export class Conversation {
       feedback: [0, 0],
     };
 
-    const prompt = answerer.render([
-      ...this.history.messages,
-      message,
-    ]);
-
+    const prompt = answerer.render(this);
     const { text, embeddings } = await generateText(prompt);
 
     if (store) {
-      this.history.push(speaker.name, query);
-      this.history.push(answerer.name, text, embeddings);
+      this.history.push({ actor: speaker.name, text: query });
+      this.history.push({ actor: answerer.name, text, embeddings });
     }
 
     return { speaker, text };
@@ -222,7 +218,7 @@ export class Conversation {
    * default value is `Moderator`.
    */
   moderate(text: string, name = "Moderator") {
-    this.history.push(name, text);
+    this.history.push({ actor: name, text });
   }
 
   /**
@@ -240,10 +236,16 @@ export class Conversation {
     speaker?: Actor;
     generateText: GenerateText;
   }): Promise<TurnResponse> {
-    const prompt = speaker.render(this.history.messages);
+    if (this.scheduler.conversation !== this) {
+      throw new TypeError(
+        "The scheduler is not assigned to this conversation.",
+      );
+    }
+
+    const prompt = speaker.render(this);
     const { text, embeddings } = await generateText(prompt);
 
-    this.history.push(speaker.name, text, embeddings);
+    this.history.push({ actor: speaker.name, text, embeddings });
     return { speaker, text, embeddings };
   }
 
@@ -263,7 +265,7 @@ export class Conversation {
     scheduler?: Scheduler;
   }): AsyncGenerator<TurnResponse> {
     if (scheduler.conversation !== this) {
-      throw new Error(
+      throw new TypeError(
         "The scheduler is not associated with this conversation.",
       );
     }

@@ -37,13 +37,10 @@ export class ConversationHistory {
    * Add a new message to the history. The message is shared between all actors
    * in the conversation, and is used to store information about the
    * conversation.
-   * @param actor The actor that sent the message.
-   * @param text The text of the message.
-   * @param embeddings The embeddings of the message. Embeddings are used to
-   * determine the similarity between messages.
+   * @param message The message to add.
    */
-  push(actor: string, text: string, embeddings?: number[]): void {
-    this.messages.push({ actor, text, embeddings, feedback: [0, 0] });
+  push(message: PartialBy<Message, "feedback">): void {
+    this.messages.push({ feedback: [0, 0], ...message });
   }
 
   /**
@@ -144,3 +141,5 @@ export class ConversationHistory {
     this.messages.length = 0;
   }
 }
+
+export type PartialBy<T, K extends keyof T> = Omit<T, K> & Partial<Pick<T, K>>;

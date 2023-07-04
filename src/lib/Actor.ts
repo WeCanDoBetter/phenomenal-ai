@@ -1,6 +1,6 @@
 import { readFileSync } from "fs";
 import { render } from "mustache";
-import { Message } from "./Conversation";
+import { Conversation, Message } from "./Conversation";
 import { reduce } from "../util";
 
 const DEFAULT_TEMPLATE_URL = new URL(
@@ -131,6 +131,7 @@ export class Actor {
    *
    * @param name The name of the actor.
    * @param template The template to render with.
+   * @param participants The perticipants in the conversation.
    * @param context The context of the actor.
    * @param persona The persona of the actor.
    * @param knowledge The knowledge of the actor.
@@ -138,9 +139,21 @@ export class Actor {
    * @param messages The messages to render with.
    */
   static render(
-    { name, template, context, persona, knowledge, memory, messages }: {
+    {
+      name,
+      conversation_name,
+      template,
+      participants,
+      context,
+      persona,
+      knowledge,
+      memory,
+      messages,
+    }: {
       name: string;
+      conversation_name: string;
       template: string;
+      participants?: Actor[];
       context: ActorContext;
       persona: ActorPersona;
       knowledge: ActorKnowledge;
@@ -150,6 +163,8 @@ export class Actor {
   ): string {
     return render(template, {
       name,
+      conversation_name,
+      participants,
       context: reduce(context),
       persona: reduce(persona),
       knowledge: reduce(knowledge),
@@ -251,17 +266,20 @@ export class Actor {
    * template. The prompt is generated using the actor's context, persona,
    * knowledge, memory, and messages.
    * @param messages The messages to render with.
+   * @param participants The perticipants in the conversation.
    * @returns The rendered prompt.
    */
-  render(messages: Message[]): string {
+  render(conversation: Conversation): string {
     return Actor.render({
       name: this.name,
+      conversation_name: conversation.name,
+      participants: conversation.actors.filter((actor) => actor !== this),
       template: this.template,
       context: this.context,
       persona: this.persona,
       knowledge: this.knowledge,
       memory: this.memory,
-      messages,
+      messages: conversation.history.messages,
     });
   }
 
