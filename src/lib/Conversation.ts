@@ -77,7 +77,7 @@ export class Conversation {
 
   constructor(
     name: string,
-    { actors, generateText, scheduler, messages }: {
+    { actors, generateText, scheduler = IndexScheduler, messages }: {
       actors: Actor[];
       generateText?: GenerateText;
       scheduler?: typeof Scheduler;
@@ -87,7 +87,7 @@ export class Conversation {
     this.name = name;
     this.actors = actors;
     this.generateText = generateText;
-    this.scheduler = new (scheduler ?? IndexScheduler)(this);
+    this.scheduler = new scheduler(this);
 
     if (messages?.length) {
       this.history.messages.push(...messages);

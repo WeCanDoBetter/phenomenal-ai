@@ -55,7 +55,7 @@ let actors: Actor[] = [
 ];
 
 // Initialize a conversation
-const conversation = new Conversation("Morning Talk", actors);
+const conversation = new Conversation("Morning Talk", { actors });
 
 // Add a context entry
 conversation.context.add("topic", "Current topic of conversation", "AI Ethics");
