@@ -16,17 +16,25 @@ context and the scheduling of actor's turns.
 ## 📌 Features
 
 - 🎭 **Multiple Actors**: This package supports interaction between multiple
-  actors, allowing for complex conversational scenarios.
+  actors, allowing for complex conversational scenarios. Each actor can have
+  their own personality and preferences.
 - 📚 **Conversation History**: Every conversation has a history which tracks the
-  course of dialogue over time.
+  course of dialogue over time. The history is used to generate responses to new
+  lines of dialogue.
 - 💾 **Shared Context**: Actors in a conversation share a context that allows
-  them to store and retrieve information relevant to the ongoing discussion.
+  them to store and retrieve information relevant to the ongoing discussion. The
+  context can be used to store information such as the topic of conversation,
+  etc.
 - 🔄 **Scheduling**: The package provides a mechanism to decide the order of
-  turns between the actors using schedulers.
+  turns between the actors using schedulers. The package comes with a default
+  scheduler that schedules turns in a round-robin fashion.
 - 🎬 **Conversation Turn Management**: Controls the turn flow of the
-  conversation and provides a method to add new messages to the conversation.
-- ✨ **Abstraction**: It provides a higher level of abstraction for AI-based
-  conversation models.
+  conversation and provides a method to inject new messages into the
+  conversation. The package also provides a method to query the conversation
+  with a question and get a response.
+- ✨ **High-Level Abstraction**: Phenomenal AI provides a high level of
+  abstraction for AI-based conversation models. This allows you to focus on the
+  conversation logic and not the underlying model.
 
 ## 🏁 Getting Started
 
@@ -72,9 +80,12 @@ const response = await conversation.query({
 
 console.log(`${response.speaker.name}: ${response.text}`);
 
-// Moderate the conversation:
+// Moderate the conversation by injecting a new message:
 
-conversation.moderate("Let's get back to the topic of conversation.");
+conversation.inject("Let's get back to the topic of conversation.", {
+  speaker: "Moderator",
+  ephemeral: true, // this message will not be stored in the history
+});
 
 // Make one turn:
 
@@ -118,26 +129,223 @@ actors.
 
 #### Methods
 
-- `constructor(name: string, actors: Actor[])`: Initializes a new instance of
-  the Conversation class.
-- `moderate(text: string, speaker?: string)`: Add a new message to the history
-  and set the speaker.
-- `query({ speaker: Actor, answerer: Actor, query, generateText: GenerateText, store = false })`:
-  Returns a promise that resolves to a turn response.
-- `turn({ generateText: GenerateText })`: Returns a promise that resolves to a
-  turn response.
-- `loop({ signal: AbortSignal; generateText: GenerateText })`: An async
-  generator that yields the speaker and the response.
+These are the methods available on the `Conversation` class.
+
+##### `new Conversation(name: string, { actors: Actor[], generateText: GenerateText, scheduler?: Scheduler, messages?: Message[] })`
+
+Initializes a new instance of the `Conversation` class.
+
+```typescript
+const conversation = new Conversation("Morning Talk", {
+  actors: [
+    new Actor("John"),
+    new Actor("Emma"),
+  ],
+  generateText: generateText, // provide your own text generation function
+  scheduler: IndexScheduler, // provide your own scheduler
+  messages: [], // bootstrap the conversation with messages
+});
+```
+
+##### `conversation.inject(text: string, { speaker?: string, embeddings?: number[], ephemeral?: true })`
+
+Injects a new message into the conversation. Returns the injected message.
+
+```typescript
+const message = conversation.inject(
+  "Let's get back to the topic of conversation.",
+  {
+    speaker: "Moderator",
+    ephemeral: true, // this message will not be stored in the history
+  },
+);
+```
+
+##### `conversation.query({ speaker: Actor, answerer: Actor, query, generateText: GenerateText, store = false })`
+
+Returns a promise that resolves to a turn response.
+
+```typescript
+const response = await conversation.query({
+  speaker: actors[0], // the speaker, i.e. the actor asking the question
+  answerer: actors[1], // the answerer, i.e. the actor answering the question
+  query: "What is the topic of conversation?", // the query to be answered
+  generateText, // provide your own text generation function
+  store: true, // store the response in the history
+});
+
+console.log(`${response.speaker.name}: ${response.text}`);
+```
+
+##### `conversation.turn({ generateText: GenerateText })`
+
+Returns a promise that resolves to a turn response.
+
+```typescript
+const response = await conversation.turn({
+  actor: conversation.scheduler.getNextSpeaker(), // get the next speaker from the scheduler
+  generateText, // provide your own text generation function
+});
+
+console.log(`${response.speaker.name}: ${response.text}`);
+```
+
+##### `conversation.loop({ signal: AbortSignal; generateText: GenerateText })`
+
+An async generator that yields the speaker, the text, and optionally the
+embeddings of each turn in the conversation.
+
+```typescript
+const ac = new AbortController();
+
+// start the loop, which will yield the responses
+const loop = conversation.loop({
+  signal: ac.signal, // provide an AbortSignal to stop the loop
+  generateText, // provide your own text generation function
+});
+
+for await (const response of loop) {
+  console.log(`${response.speaker.name}: ${response.text}`);
+}
+```
+
+##### `conversation.toJSON()`
+
+Returns a JSON representation of the conversation.
+
+```typescript
+const json = conversation.toJSON();
+```
 
 ### ConversationHistory
 
-The `ConversationHistory` class represents the history of a conversation. It
-tracks the course of dialogue over time. See source files for more details.
+The `ConversationHistory` class represents the history of a conversation.
+
+#### Properties
+
+- `messages`: Array of messages in the conversation.
+
+#### Methods
+
+These are the methods available on the `ConversationHistory` class.
+
+##### `new ConversationHistory(messages?: Message[])`
+
+Initializes a new instance of the `ConversationHistory` class.
+
+```typescript
+const history = new ConversationHistory([
+  { actor: "John", text: "Hello, Emma!" },
+  { actor: "Emma", text: "Hi, John!" },
+]);
+```
+
+##### `history.push(message: PartialBy<Message, "feedback">)`
+
+Pushes a new message to the history.
+
+```typescript
+history.push({ actor: "John", text: "Hello, Emma!" });
+```
+
+##### `history.getMessagesFor(actor: string)`
+
+Returns an map of indexes and messages for the given actor.
+
+```typescript
+const messages = history.getMessagesFor("John");
+```
+
+##### `history.getStats()`
+
+Returns statistics about the history.
+
+```typescript
+const stats = history.getStats();
+```
+
+##### `history.cleanEphemeral()`
+
+Removes ephemeral messages from the history.
+
+```typescript
+history.cleanEphemeral();
+```
+
+##### `history.up(message: Message)`
+
+Add positive feedback to the given message.
+
+```typescript
+const message = history.messages[0]; // get message from somewhere
+history.up(message);
+```
+
+##### `history.down(message: Message)`
+
+Add negative feedback to the given message.
+
+```typescript
+const message = history.messages[0]; // get message from somewhere
+history.down(message);
+```
+
+##### `history.first(): Message`
+
+Returns the first message in the history.
+
+##### `history.last(): Message`
+
+Returns the last message in the history.
+
+##### `history.toJSON()`
+
+Returns a JSON representation of the history.
+
+#### `history.clear()`
+
+Clears the history.
 
 ### Actor
 
 The `Actor` class represents an entity that is taking part in a conversation.
-See source files for more details.
+
+#### Properties
+
+- `id`: Unique identifier for the actor.
+- `name`: Name of the actor.
+- `template`: Template for the actor's prompts.
+- `context`: Shared context between all actors in the conversation.
+- `persona`: Persona of the actor.
+- `knowledge`: Knowledge of the actor.
+- `memory`: Memory of the actor.
+
+#### Methods
+
+These are the methods available on the `Actor` class.
+
+##### `new Actor(name: string, { template?: string, persona?: Persona, knowledge?: Knowledge, memory?: Memory })`
+
+Initializes a new instance of the `Actor` class.
+
+```typescript
+const actor = new Actor("John", {
+  template: "Hello, my name is {{name}}.",
+);
+```
+
+##### `actor.render(conversation: Conversation)`
+
+Renders the actor's template into a prompt. The prompt is a message that can be
+used by your chosen large language model to generate a response.
+
+```typescript
+const prompt = actor.render(conversation);
+```
+
+##### `actor.toJSON()`
+
+Returns a JSON representation of the actor.
 
 ## ❤️ Contributing
 

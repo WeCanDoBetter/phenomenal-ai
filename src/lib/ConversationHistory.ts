@@ -88,6 +88,29 @@ export class ConversationHistory {
   }
 
   /**
+   * Remove ephemeral messages from the history. Ephemeral messages are
+   * messages that are not part of the conversation, and are only added
+   * for a single turn.
+   */
+  cleanEphemeral(): void {
+    const messages = this.messages.reduce(
+      (indexes, message, index) => {
+        if (message.ephemeral) {
+          indexes.push(index);
+        }
+        return indexes;
+      },
+      [] as number[],
+    );
+
+    if (messages.length) {
+      for (const index of messages) {
+        this.messages.splice(index, 1);
+      }
+    }
+  }
+
+  /**
    * Add positive feedback to a message.
    * @param message The message to add feedback to.
    */

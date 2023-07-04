@@ -199,24 +199,28 @@ export class Actor {
    * actor.
    *
    * @param name The name of the actor.
-   * @param template The prompt template for the actor.
-   * @param op Optional parameters.
-   * @param op.context The context of the actor.
-   * @param op.persona The persona of the actor.
-   * @param op.knowledge The knowledge of the actor.
-   * @param op.memory The memory of the actor.
+   * @param template The prompt template for the actor. If not provided, the
+   * default template is used.
+   * @param context The context of the actor.
+   * @param persona The persona of the actor.
+   * @param knowledge The knowledge of the actor.
+   * @param memory The memory of the actor.
    */
-  constructor(name: string, template = DEFAULT_TEMPLATE, op?: {
-    context?: Record<string, ContextData>;
-    persona?: Partial<Record<PersonaType, PersonaData[]>>;
-    knowledge?: Partial<Record<KnowledgeType, KnowledgeData[]>>;
-    memory?: Partial<Record<MemoryType, MemoryData[]>>;
-  }) {
+  constructor(
+    name: string,
+    { template = DEFAULT_TEMPLATE, context, persona, knowledge, memory }: {
+      template?: string;
+      context?: Record<string, ContextData>;
+      persona?: Partial<Record<PersonaType, PersonaData[]>>;
+      knowledge?: Partial<Record<KnowledgeType, KnowledgeData[]>>;
+      memory?: Partial<Record<MemoryType, MemoryData[]>>;
+    } = {},
+  ) {
     this.name = name;
     this.template = template;
 
-    if (op?.context) {
-      for (const [name, data] of Object.entries(op.context)) {
+    if (context) {
+      for (const [name, data] of Object.entries(context)) {
         this.context.set(name, {
           ...data,
           priority: data.priority ?? 0,
@@ -224,8 +228,8 @@ export class Actor {
       }
     }
 
-    if (op?.persona) {
-      for (const [type, data] of Object.entries(op.persona)) {
+    if (persona) {
+      for (const [type, data] of Object.entries(persona)) {
         this.persona.set(
           type as PersonaType,
           data.map((content) => ({
@@ -236,8 +240,8 @@ export class Actor {
       }
     }
 
-    if (op?.knowledge) {
-      for (const [type, data] of Object.entries(op.knowledge)) {
+    if (knowledge) {
+      for (const [type, data] of Object.entries(knowledge)) {
         this.knowledge.set(
           type as KnowledgeType,
           data.map((content) => ({
@@ -248,8 +252,8 @@ export class Actor {
       }
     }
 
-    if (op?.memory) {
-      for (const [type, data] of Object.entries(op.memory)) {
+    if (memory) {
+      for (const [type, data] of Object.entries(memory)) {
         this.memory.set(
           type as MemoryType,
           data.map((content) => ({
