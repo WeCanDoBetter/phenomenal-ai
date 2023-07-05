@@ -74,6 +74,15 @@ export interface TurnResponse {
 }
 
 /**
+ * The context window is used to determine the size of the prompt. The size of
+ * the prompt is determined by the number of tokens in the context window.
+ */
+export interface ContextWindow {
+  /** The maximum number of tokens in the prompt. */
+  max: number;
+}
+
+/**
  * A conversation is a collection of actors that take turns speaking. The
  * conversation is responsible for keeping track of the history of the
  * conversation, and for providing a context to the actors. The context is
@@ -116,7 +125,12 @@ export class Conversation {
   /** The scheduler of the conversation. */
   readonly scheduler: Scheduler;
 
-  historyWindow: number | undefined;
+  /**
+   * The context window size for the conversation. The context window is used to
+   * determine the size of the prompt. The size of the prompt is determined by
+   * the number of tokens.
+   */
+  window: number | ContextWindow | undefined;
 
   constructor(
     name: string,
@@ -127,7 +141,7 @@ export class Conversation {
       generateEmbeddings,
       scheduler = RoundRobinScheduler,
       messages,
-      windows,
+      window,
     }: {
       actors: Actor[];
       generateText?: GenerateText;
@@ -135,9 +149,7 @@ export class Conversation {
       generateEmbeddings?: GenerateEmbeddings;
       scheduler?: typeof Scheduler;
       messages?: Message[];
-      windows?: {
-        history?: number;
-      };
+      window?: ContextWindow | number;
     },
   ) {
     this.name = name;
@@ -151,12 +163,15 @@ export class Conversation {
       this.history.messages.push(...messages);
     }
 
-    if (typeof windows?.history === "number") {
-      if (windows.history < 1) {
-        throw new Error("History window cannot be less than 1.");
+    if (typeof window !== "undefined") {
+      const valid = (typeof window === "number" && window < 0) ||
+        (typeof window === "object" && window.max < 0);
+
+      if (!valid) {
+        throw new Error("The context window must be a positive number.");
       }
 
-      this.historyWindow = windows.history;
+      this.window = window;
     }
   }
 
@@ -179,7 +194,7 @@ export class Conversation {
             acc = { ...acc, [name]: data };
           }
           return acc;
-        }, {} as Record<string, ActorData>);
+        }, {} as Record<string, ActorData[]>);
       },
       /**
        * Set an  entry on the context. The entry is shared between all actors
@@ -190,24 +205,46 @@ export class Conversation {
        * @param value The value of the entry.
        * @param priority The priority of the entry. Entries with a higher
        * priority are preferred over entries with a lower priority.
+       * @param tokens The tokens of the entry. Tokens are used to calculate
+       * the prompt size.
        * @param embeddings The embeddings of the entry. Embeddings are used to
        * determine the similarity between entries.
+       * @param keep Whether to keep the entry in the context when truncating
+       * the context window (default: `false`).
        */
-      set: (
+      set: async (
         name: string,
         description: string,
         value: string,
-        priority?: number,
-        embeddings?: number[],
-      ): void => {
+        { priority, tokens = false, embeddings = false, keep }: {
+          priority?: number;
+          tokens?: number[] | boolean;
+          embeddings?: number[] | boolean;
+          keep?: boolean;
+        },
+      ): Promise<void> => {
         for (const actor of this.actors) {
-          actor.context.set(name, {
+          const data: ActorData = {
             name,
             description,
             value,
             priority: priority ?? 0,
-            embeddings,
-          });
+            tokens: Array.isArray(tokens)
+              ? tokens
+              : typeof tokens === "boolean" && tokens !== false
+              ? await this.generateTokens?.(value)
+              : undefined,
+            embeddings: Array.isArray(embeddings)
+              ? embeddings
+              : typeof embeddings === "boolean" && embeddings !== false
+              ? await this.generateEmbeddings?.(value)
+              : undefined,
+            keep,
+          };
+
+          const entry = actor.context.get(name) ?? [];
+          entry.push(data);
+          actor.context.set(name, entry);
         }
       },
       /**
@@ -228,11 +265,11 @@ export class Conversation {
        * @param name The name of the entry.
        * @returns The entry.
        */
-      get: (name: string): ActorData["value"] | undefined => {
+      get: (name: string): ActorData[] | undefined => {
         for (const actor of this.actors) {
           const data = actor.context.get(name);
           if (data) {
-            return data.value;
+            return data;
           }
         }
       },
@@ -262,38 +299,55 @@ export class Conversation {
       answerer,
       query,
       generateText = this.generateText,
+      generateTokens = this.generateTokens,
+      generateEmbeddings = this.generateEmbeddings,
       store = false,
     }: {
       speaker: Actor | string;
       answerer: Actor;
       query: string;
       generateText?: GenerateText;
-      store?: boolean;
+      generateTokens?: GenerateTokens;
+      generateEmbeddings?: GenerateEmbeddings;
+      store?: boolean | {
+        query?: boolean;
+        response?: boolean;
+      };
     },
   ): Promise<TurnResponse> {
     if (!generateText) {
       throw new Error("No 'generateText' function provided");
     }
 
-    const message: Omit<Message, "feedback"> = {
-      actor: typeof speaker === "string" ? speaker : speaker.name,
+    const ephemeral = typeof store === "boolean" ? !store : !store.query;
+
+    const message = await this.buildMessage({
+      speaker: typeof speaker === "string" ? speaker : speaker.name,
       text: query,
-      ephemeral: true,
-    };
+      tokens: false,
+      embeddings: false,
+      ephemeral,
+    });
 
     this.history.push(message);
 
     const prompt = answerer.render(this);
     const { text, tokens, embeddings } = await generateText(prompt);
 
-    this.history.cleanEphemeral();
+    if (ephemeral) {
+      this.history.cleanEphemeral();
+    }
 
-    if (store) {
-      this.history.push({
-        actor: typeof speaker === "string" ? speaker : speaker.name,
-        text: query,
-      });
-      this.history.push({ actor: answerer.name, text, tokens, embeddings });
+    if (store === true || (store as { response?: boolean }).response === true) {
+      this.history.push(
+        await this.buildMessage({
+          speaker: answerer.name,
+          text,
+          tokens: tokens ?? typeof generateTokens === "function",
+          embeddings: embeddings ??
+            typeof generateEmbeddings === "function",
+        }),
+      );
     }
 
     return {
@@ -302,6 +356,8 @@ export class Conversation {
         ? speaker
         : this.actors.find((actor) => actor.name === speaker),
       text,
+      tokens,
+      embeddings,
     };
   }
 
@@ -319,22 +375,25 @@ export class Conversation {
    * @param ephemeral Whether the message is ephemeral. By default the message
    * is not ephemeral.
    */
-  inject(
+  async inject(
     text: string,
     { speaker = "System", tokens, embeddings, ephemeral }: {
       speaker?: string | Actor;
-      tokens?: number[];
-      embeddings?: number[];
-      ephemeral?: true;
+      tokens?: number[] | boolean;
+      embeddings?: number[] | boolean;
+      ephemeral?: boolean;
     },
-  ) {
-    this.history.push({
-      actor: speaker instanceof Actor ? speaker.name : speaker,
+  ): Promise<Message> {
+    const message = await this.buildMessage({
+      speaker,
       text,
       tokens,
       embeddings,
       ephemeral,
     });
+
+    this.history.push(message);
+    return message;
   }
 
   /**
@@ -364,12 +423,18 @@ export class Conversation {
     const prompt = speaker.render(this);
     const { text, tokens, embeddings } = await generateText(prompt);
 
-    this.history.push({ actor: speaker.name, text, tokens, embeddings });
+    const message = await this.buildMessage({
+      speaker,
+      text,
+      tokens,
+      embeddings,
+    });
+
+    this.history.push(message);
     this.history.cleanEphemeral();
 
     return {
-      speaker: speaker.name,
-      actor: speaker,
+      speaker: message.actor,
       text,
       tokens,
       embeddings,
@@ -409,6 +474,67 @@ export class Conversation {
         generateText,
       });
     }
+  }
+
+  /**
+   * Build a message. This allows an actor to build a message that can be
+   * injected into the conversation. The message is used to update the history
+   * of the conversation. The message can be ephemeral, which means that it
+   * will be removed from the history after the next turn.
+   * @param speaker The name of the actor that is speaking.
+   * @param text The text of the message.
+   * @param tokens The tokens of the message. If no tokens are provided, the
+   * tokens will be generated from the text (if a `generateTokens` function is
+   * provided).
+   * @param embeddings The embeddings of the message. Embeddings are used to
+   * determine the similarity between messages. If no embeddings are provided,
+   * the embeddings will be generated from the text (if a `generateEmbeddings`
+   * function is provided).
+   * @param ephemeral Whether the message is ephemeral. By default the message
+   * is not ephemeral.
+   * @param feedback The feedback of the message.
+   * @param generateTokens A function that generates tokens given a text.
+   * @param generateEmbeddings A function that generates embeddings given a
+   * text.
+   * @returns The message.
+   */
+  async buildMessage(
+    { speaker, text, tokens, embeddings, ephemeral, feedback }: {
+      speaker: Actor | string;
+      text: string;
+      tokens?: number[] | boolean;
+      embeddings?: number[] | boolean;
+      feedback?: [up: number, down: number];
+      ephemeral?: boolean;
+    },
+    {
+      generateTokens = this.generateTokens,
+      generateEmbeddings = this.generateEmbeddings,
+    }: {
+      generateTokens?: GenerateTokens;
+      generateEmbeddings?: GenerateEmbeddings;
+    } = {},
+  ): Promise<Message> {
+    return {
+      actor: typeof speaker === "string" ? speaker : speaker.name,
+      text,
+      tokens: ephemeral
+        ? undefined
+        : Array.isArray(tokens)
+        ? tokens
+        : tokens === true
+        ? await generateTokens?.(text)
+        : undefined,
+      embeddings: ephemeral
+        ? undefined
+        : Array.isArray(embeddings)
+        ? embeddings
+        : embeddings === true
+        ? await generateEmbeddings?.(text)
+        : undefined,
+      ephemeral: ephemeral === true,
+      feedback: feedback ?? [0, 0],
+    };
   }
 
   /**

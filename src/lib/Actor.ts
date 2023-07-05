@@ -1,7 +1,7 @@
 import { readFileSync } from "fs";
 import { render } from "mustache";
 import { Conversation, type Message } from "./Conversation";
-import { mask, reduce } from "../util";
+import { buildWindow, reduce } from "../util";
 
 const DEFAULT_TEMPLATE_URL = new URL(
   "../../templates/actor.mustache",
@@ -28,6 +28,8 @@ export interface ActorData<Data = string> {
   /** The embeddings of the data entry. Embeddings are used to determine the
    * similarity between entries. */
   embeddings?: number[];
+  /** Whether to keep the data entry when truncating the context window. */
+  keep?: boolean;
 }
 
 /**
@@ -105,11 +107,10 @@ export enum MemoryType {
   Relationship = "relationship",
 }
 
-export type ActorContext = Map<string, ActorData>;
+export type ActorContext = Map<string, ActorData[]>;
 export type ActorPersona = Map<PersonaType, ActorData[]>;
 export type ActorKnowledge = Map<KnowledgeType, ActorData[]>;
 export type ActorMemory = Map<MemoryType, ActorData[]>;
-export type ActorConversation = Message[];
 
 /**
  * An actor is a person or other entity that performs a role in a conversation.
@@ -137,7 +138,8 @@ export class Actor {
   static render(
     {
       name,
-      conversation_name,
+      conversation,
+      actor,
       template,
       participants,
       context,
@@ -147,30 +149,35 @@ export class Actor {
       messages,
     }: {
       name: string;
-      conversation_name: string;
+      conversation: {
+        id: string;
+        name: string;
+      };
+      actor: Actor;
       template: string;
       participants?: Actor[];
-      context: ActorContext;
-      persona: ActorPersona;
-      knowledge: ActorKnowledge;
-      memory: ActorMemory;
+      context: Record<string, ActorData[]>;
+      persona: Record<string, ActorData[]>;
+      knowledge: Record<string, ActorData[]>;
+      memory: Record<string, ActorData[]>;
       messages: Message[];
     },
   ): string {
     return render(template, {
       name,
-      conversation_name,
+      conversation,
+      actor,
       participants,
-      context: reduce(context),
-      persona: reduce(persona),
-      knowledge: reduce(knowledge),
-      memory: reduce(memory),
+      context,
+      persona,
+      knowledge,
+      memory,
       messages,
     });
   }
 
   /** The unique identifier of the actor. */
-  readonly id = crypto.randomUUID();
+  readonly id;
   /** The name of the actor. */
   readonly name: string;
   /** The prompt template for the actor. This template is used to generate the
@@ -204,14 +211,23 @@ export class Actor {
    */
   constructor(
     name: string,
-    { template = DEFAULT_TEMPLATE, context, persona, knowledge, memory }: {
+    {
+      id = crypto.randomUUID(),
+      template = DEFAULT_TEMPLATE,
+      context,
+      persona,
+      knowledge,
+      memory,
+    }: {
+      id?: string;
       template?: string;
-      context?: Record<string, ActorData>;
+      context?: Record<string, ActorData[]>;
       persona?: Partial<Record<PersonaType, ActorData[]>>;
       knowledge?: Partial<Record<KnowledgeType, ActorData[]>>;
       memory?: Partial<Record<MemoryType, ActorData[]>>;
     } = {},
   ) {
+    this.id = id;
     this.name = name;
     this.template = template;
 
@@ -248,18 +264,38 @@ export class Actor {
    * @returns The rendered prompt.
    */
   render(conversation: Conversation): string {
-    return Actor.render({
-      name: this.name,
-      conversation_name: conversation.name,
-      participants: conversation.actors.filter((actor) => actor !== this),
-      template: this.template,
+    const context = {
       context: this.context,
       persona: this.persona,
       knowledge: this.knowledge,
       memory: this.memory,
-      messages: conversation.historyWindow
-        ? mask(conversation.history.messages, conversation.historyWindow)
-        : conversation.history.messages,
+    };
+
+    const window = conversation.window
+      ? buildWindow(
+        context,
+        typeof conversation.window === "object"
+          ? conversation.window.max
+          : conversation.window,
+      )
+      : {
+        context: reduce(this.context),
+        persona: reduce(this.persona),
+        knowledge: reduce(this.knowledge),
+        memory: reduce(this.memory),
+      };
+
+    return Actor.render({
+      name: this.name,
+      conversation: conversation,
+      actor: this,
+      participants: conversation.actors.filter((actor) => actor !== this),
+      template: this.template,
+      context: window.context,
+      persona: window.persona,
+      knowledge: window.knowledge,
+      memory: window.memory,
+      messages: conversation.history.messages,
     });
   }
 

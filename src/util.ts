@@ -1,3 +1,4 @@
+import { ActorData } from "./lib/Actor";
 import type { Message } from "./lib/Conversation";
 
 /**
@@ -38,16 +39,11 @@ export function mask(messages: Message[], window: number): Message[] {
   const unmasked: Message[] = [];
   let totalLength = 0;
 
-  // a heuristic to approximate the length of the embeddings
-  // based on OpenAI's notion that 1k tokens is roughly 750 words (3/4ths)
-  const heuristic = (message: Message) =>
-    Math.ceil(message.text.split(" ").length * 0.75);
-
   for (let i = messages.length - 1; i >= 0; i--) {
     const message = messages[i];
     const length = message.embeddings
       ? message.embeddings.length
-      : heuristic(message);
+      : heuristic(message.text);
 
     if (totalLength + length > window) {
       break;
@@ -85,4 +81,97 @@ export function cosineSimilarity(a: number[], b: number[]): number {
   const magnitudeB = Math.sqrt(dotProduct(b, b));
   const similarity = dotProductAB / (magnitudeA * magnitudeB);
   return similarity;
+}
+
+/**
+ * Get the approximate length of a text. This method is used when a text
+ * does not have tokens. The heuristic is based on OpenAI's notion that
+ * 1k tokens is roughly 750 words (3/4ths).
+ */
+export function heuristic(text: string) {
+  return Math.ceil(text.split(" ").length * 0.75);
+}
+
+export interface IndexedActorData extends ActorData {
+  section: string;
+  type: string;
+  index: number;
+}
+
+/**
+ * Build a window of values. The window is built by adding values in order
+ * until the maximum number of tokens is reached. The values are sorted by
+ * `keep` (true first), then by `priority` (high first), then by index
+ * (low first). Then the values are sorted by the original index, so that
+ * the values are returned in the original order.
+ * @param inputValues The values to build the window from
+ * @param maxTokens The maximum number of tokens in the window
+ * @returns The values in the window in the original order
+ */
+export function buildWindow(
+  inputValues: Record<string, Map<string, ActorData[]>>,
+  maxTokens: number,
+): Record<string, Record<string, ActorData[]>> {
+  let currentTokens = 0;
+  const sortedValues: IndexedActorData[] = [];
+
+  // Add an index, section and type to each value
+  for (const section in inputValues) {
+    const typeMap = inputValues[section];
+    typeMap.forEach((values, type) => {
+      values.forEach((value, index) => {
+        sortedValues.push({
+          ...value,
+          index,
+          section,
+          type,
+        });
+      });
+    });
+  }
+
+  // Sort values by keep (true first), then by priority (high first), then by index (low first)
+  sortedValues.sort((a, b) => {
+    if (a.keep !== b.keep) return a.keep ? -1 : 1;
+    if (a.priority !== b.priority) return (b.priority ?? 0) - (a.priority ?? 0);
+    return b.index - a.index;
+  });
+
+  // Process values in the sorted order and build the output map
+  const orderedValues: Record<string, Record<string, IndexedActorData[]>> = {};
+
+  for (const value of sortedValues) {
+    const tokenLength = value.tokens?.length ?? heuristic(value.value);
+    if (currentTokens + tokenLength > maxTokens) {
+      break;
+    }
+
+    if (!orderedValues[value.section]) {
+      orderedValues[value.section] = {};
+    }
+
+    if (!orderedValues[value.section][value.type]) {
+      orderedValues[value.section][value.type] = [];
+    }
+
+    orderedValues[value.section][value.type].push(value);
+    currentTokens += tokenLength;
+  }
+
+  const outputValues: Record<string, Record<string, ActorData[]>> = {};
+
+  // Re-sort each type list by the original index and remove the index, section, and type properties
+  for (const section in orderedValues) {
+    for (const type in orderedValues[section]) {
+      if (!outputValues[section]) {
+        outputValues[section] = {};
+      }
+
+      outputValues[section][type] = orderedValues[section][type].sort((a, b) =>
+        a.index - b.index
+      ).map(({ index, section, type, ...rest }) => rest);
+    }
+  }
+
+  return outputValues;
 }
