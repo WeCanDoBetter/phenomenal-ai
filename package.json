@@ -1,6 +1,6 @@
 {
   "name": "@wecandobetter/phenomenal-ai",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "Phenomenal AI is a conversational AI that can be used to create chatbots, voice assistants, and more.",
   "main": "dist/index.js",
   "type": "module",
