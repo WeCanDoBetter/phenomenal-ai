@@ -1,6 +1,6 @@
 import { Actor, type ActorData } from "./Actor";
 import { ConversationHistory } from "./ConversationHistory";
-import { IndexScheduler, Scheduler } from "./Scheduler";
+import { RoundRobinScheduler, Scheduler } from "./Scheduler";
 
 /**
  * A response from the model. The response contains the text that the model
@@ -9,6 +9,8 @@ import { IndexScheduler, Scheduler } from "./Scheduler";
 export interface GenerateTextResult {
   /** The text that the model generated. */
   text: string;
+  /** The tokens of the text that the model generated. */
+  tokens?: number[];
   /** The embeddings of the text that the model generated. */
   embeddings?: number[];
 }
@@ -21,6 +23,21 @@ export interface GenerateTextResult {
 export type GenerateText = (prompt: string) => Promise<GenerateTextResult>;
 
 /**
+ * A function that generates tokens given a prompt.
+ * @param prompt The prompt to generate tokens from.
+ * @returns The generated tokens.
+ */
+export type GenerateTokens = (prompt: string) => Promise<number[]>;
+
+/**
+ * A function that generates embeddings given a prompt. Embeddings are used to
+ * determine the similarity between messages.
+ * @param prompt The prompt to generate embeddings from.
+ * @returns The generated embeddings.
+ */
+export type GenerateEmbeddings = (prompt: string) => Promise<number[]>;
+
+/**
  * A message in a conversation. Messages are used to communicate between actors
  * in a conversation. Messages are immutable.
  */
@@ -31,6 +48,8 @@ export interface Message {
   readonly text: string;
   /** The feedback of the message. Feedback is used to fine-tune the model. */
   readonly feedback: [up: number, down: number];
+  /** The tokens of the message. Tokens can be used to calculate the prompt size. */
+  readonly tokens?: number[];
   /** The embeddings of the message. Embeddings are used to determine the similarity between messages. */
   readonly embeddings?: number[];
   /** Whether the message is ephemeral. Ephemeral messages are removed from the history after a turn. */
@@ -48,6 +67,8 @@ export interface TurnResponse {
   actor?: Actor;
   /** The text that the actor spoke. */
   text: string;
+  /** The tokens of the text that the actor spoke. */
+  tokens?: number[];
   /** The embeddings of the text that the actor spoke. */
   embeddings?: number[];
 }
@@ -88,6 +109,10 @@ export class Conversation {
   readonly history = new ConversationHistory();
   /** The function that generates text. */
   readonly generateText?: GenerateText;
+  /** The function that generates tokens. */
+  readonly generateTokens?: GenerateTokens;
+  /** The function that generates embeddings. */
+  readonly generateEmbeddings?: GenerateEmbeddings;
   /** The scheduler of the conversation. */
   readonly scheduler: Scheduler;
 
@@ -95,9 +120,19 @@ export class Conversation {
 
   constructor(
     name: string,
-    { actors, generateText, scheduler = IndexScheduler, messages, windows }: {
+    {
+      actors,
+      generateText,
+      generateTokens,
+      generateEmbeddings,
+      scheduler = RoundRobinScheduler,
+      messages,
+      windows,
+    }: {
       actors: Actor[];
       generateText?: GenerateText;
+      generateTokens?: GenerateTokens;
+      generateEmbeddings?: GenerateEmbeddings;
       scheduler?: typeof Scheduler;
       messages?: Message[];
       windows?: {
@@ -108,6 +143,8 @@ export class Conversation {
     this.name = name;
     this.actors = actors;
     this.generateText = generateText;
+    this.generateTokens = generateTokens;
+    this.generateEmbeddings = generateEmbeddings;
     this.scheduler = new scheduler(this);
 
     if (messages?.length) {
@@ -247,7 +284,7 @@ export class Conversation {
     this.history.push(message);
 
     const prompt = answerer.render(this);
-    const { text, embeddings } = await generateText(prompt);
+    const { text, tokens, embeddings } = await generateText(prompt);
 
     this.history.cleanEphemeral();
 
@@ -256,7 +293,7 @@ export class Conversation {
         actor: typeof speaker === "string" ? speaker : speaker.name,
         text: query,
       });
-      this.history.push({ actor: answerer.name, text, embeddings });
+      this.history.push({ actor: answerer.name, text, tokens, embeddings });
     }
 
     return {
@@ -276,6 +313,7 @@ export class Conversation {
    * @param text The text of the message.
    * @param speaker The name of the actor that is speaking. If no speaker is
    * provided, the value will be `System`.
+   * @param tokens The tokens of the message.
    * @param embeddings The embeddings of the message. Embeddings are used to
    * determine the similarity between messages.
    * @param ephemeral Whether the message is ephemeral. By default the message
@@ -283,15 +321,17 @@ export class Conversation {
    */
   inject(
     text: string,
-    { speaker = "System", embeddings, ephemeral }: {
+    { speaker = "System", tokens, embeddings, ephemeral }: {
       speaker?: string | Actor;
+      tokens?: number[];
       embeddings?: number[];
       ephemeral?: true;
     },
   ) {
     this.history.push({
-      actor: typeof speaker === "string" ? speaker : speaker.name,
+      actor: speaker instanceof Actor ? speaker.name : speaker,
       text,
+      tokens,
       embeddings,
       ephemeral,
     });
@@ -322,15 +362,16 @@ export class Conversation {
     }
 
     const prompt = speaker.render(this);
-    const { text, embeddings } = await generateText(prompt);
+    const { text, tokens, embeddings } = await generateText(prompt);
 
-    this.history.push({ actor: speaker.name, text, embeddings });
+    this.history.push({ actor: speaker.name, text, tokens, embeddings });
     this.history.cleanEphemeral();
 
     return {
       speaker: speaker.name,
       actor: speaker,
       text,
+      tokens,
       embeddings,
     };
   }

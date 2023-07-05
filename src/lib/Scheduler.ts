@@ -37,7 +37,7 @@ export class Scheduler {
  * actors is determined by the order in which they were added to the
  * conversation.
  */
-export class IndexScheduler extends Scheduler {
+export class RoundRobinScheduler extends Scheduler {
   /** The index of the last actor that spoke. */
   private lastIndex = 0;
 

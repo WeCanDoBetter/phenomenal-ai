@@ -22,6 +22,9 @@ export interface ActorData<Data = string> {
   /** The priority of the data entry. Entries with a higher priority are
    * preferred over entries with a lower priority. */
   priority?: number;
+  /** The tokens of the data entry. Tokens can be used to calculate the
+   * prompt size. */
+  tokens?: number[];
   /** The embeddings of the data entry. Embeddings are used to determine the
    * similarity between entries. */
   embeddings?: number[];
