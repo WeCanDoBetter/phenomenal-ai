@@ -1,3 +1,4 @@
+import { readFileSync } from "fs";
 import { ActorData } from "./lib/Actor";
 import type { Message } from "./lib/Conversation";
 
@@ -174,4 +175,14 @@ export function buildWindow(
   }
 
   return outputValues;
+}
+
+/**
+ * Load a prompt template from the templates directory.
+ * @param name The name of the template to load
+ * @returns The template as a string
+ */
+export function loadTemplate(name: string): string {
+  const url = new URL(`../templates/${name}.mustache`, __dirname);
+  return readFileSync(url, "utf8");
 }

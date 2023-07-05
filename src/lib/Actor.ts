@@ -1,13 +1,12 @@
-import { readFileSync } from "fs";
 import { render } from "mustache";
 import { Conversation, type Message } from "./Conversation";
-import { buildWindow, reduce } from "../util";
+import { buildWindow, loadTemplate, reduce } from "../util";
 
-const DEFAULT_TEMPLATE_URL = new URL(
-  "../../templates/actor.mustache",
-  __dirname,
-);
-const DEFAULT_TEMPLATE = readFileSync(DEFAULT_TEMPLATE_URL, "utf8");
+/**
+ * The default template for an actor. The template is used to render the actor
+ * prompt.
+ */
+const DEFAULT_TEMPLATE = loadTemplate("actor");
 
 /**
  * The data of an actor. The data is used to store information about the actor.
