@@ -1,4 +1,4 @@
-import { Message } from "./Conversation";
+import { Message } from "./Conversation.js";
 
 /**
  * Make some properties of an object optional.

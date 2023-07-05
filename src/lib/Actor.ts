@@ -1,6 +1,6 @@
-import { render } from "mustache";
-import { Conversation, type Message } from "./Conversation";
-import { buildWindow, loadTemplate, reduce } from "../util";
+import { default as mustache } from "mustache";
+import { Conversation, type Message } from "./Conversation.js";
+import { buildWindow, loadTemplate, reduce } from "../util.js";
 
 /**
  * The default template for an actor. The template is used to render the actor
@@ -162,7 +162,7 @@ export class Actor {
       messages: Message[];
     },
   ): string {
-    return render(template, {
+    return mustache.render(template, {
       name,
       conversation,
       actor,

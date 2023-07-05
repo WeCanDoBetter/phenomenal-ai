@@ -1,6 +1,6 @@
 import { readFileSync } from "fs";
-import { ActorData } from "./lib/Actor";
-import type { Message } from "./lib/Conversation";
+import { ActorData } from "./lib/Actor.js";
+import type { Message } from "./lib/Conversation.js";
 
 /**
  * Reduce a map to a record. Optionally sort the entries before reducing.
@@ -183,6 +183,6 @@ export function buildWindow(
  * @returns The template as a string
  */
 export function loadTemplate(name: string): string {
-  const url = new URL(`../templates/${name}.mustache`, __dirname);
+  const url = new URL(`../templates/${name}.mustache`, import.meta.url);
   return readFileSync(url, "utf8");
 }

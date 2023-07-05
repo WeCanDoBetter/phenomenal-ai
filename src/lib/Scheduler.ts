@@ -1,5 +1,5 @@
-import { Conversation } from "./Conversation";
-import { Actor } from "./Actor";
+import { Conversation } from "./Conversation.js";
+import { Actor } from "./Actor.js";
 
 /**
  * A scheduler is used to determine which actor should speak next in a

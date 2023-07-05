@@ -1,6 +1,6 @@
-import { Actor, type ActorData } from "./Actor";
-import { ConversationHistory } from "./ConversationHistory";
-import { RoundRobinScheduler, Scheduler } from "./Scheduler";
+import { Actor, type ActorData } from "./Actor.js";
+import { ConversationHistory } from "./ConversationHistory.js";
+import { RoundRobinScheduler, Scheduler } from "./Scheduler.js";
 
 /**
  * A response from the model. The response contains the text that the model
@@ -67,6 +67,8 @@ export interface TurnResponse {
   actor?: Actor;
   /** The text that the actor spoke. */
   text: string;
+  /** The prompt used to generate the text. */
+  prompt: string;
   /** The tokens of the text that the actor spoke. */
   tokens?: number[];
   /** The embeddings of the text that the actor spoke. */
@@ -221,7 +223,7 @@ export class Conversation {
           tokens?: number[] | boolean;
           embeddings?: number[] | boolean;
           keep?: boolean;
-        },
+        } = {},
       ): Promise<void> => {
         for (const actor of this.actors) {
           const data: ActorData = {
@@ -356,6 +358,7 @@ export class Conversation {
         ? speaker
         : this.actors.find((actor) => actor.name === speaker),
       text,
+      prompt,
       tokens,
       embeddings,
     };
@@ -436,6 +439,7 @@ export class Conversation {
     return {
       speaker: message.actor,
       text,
+      prompt,
       tokens,
       embeddings,
     };
