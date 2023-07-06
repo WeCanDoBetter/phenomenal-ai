@@ -1,7 +1,7 @@
 import { expect } from "chai";
-import { Actor } from "../src";
+import { Actor } from "../src/lib/Actor";
 
-describe("Example", () => {
+describe("Actor", () => {
   let actor: Actor;
 
   it("should create a new Actor", () => {
