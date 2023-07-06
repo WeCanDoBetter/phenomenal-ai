@@ -192,7 +192,7 @@ export class Conversation {
        */
       entries: () => {
         return this.actors.reduce((acc, actor) => {
-          for (const [name, data] of actor.context.entries()) {
+          for (const [name, data] of Object.entries(actor.context)) {
             acc = { ...acc, [name]: data };
           }
           return acc;
@@ -244,9 +244,9 @@ export class Conversation {
             keep,
           };
 
-          const entry = actor.context.get(name) ?? [];
+          const entry = actor.context[name] ?? [];
           entry.push(data);
-          actor.context.set(name, entry);
+          actor.context[name] = entry;
         }
       },
       /**
@@ -257,7 +257,7 @@ export class Conversation {
        */
       del: (name: string): void => {
         for (const actor of this.actors) {
-          actor.context.delete(name);
+          delete actor.context[name];
         }
       },
       /**
@@ -269,10 +269,7 @@ export class Conversation {
        */
       get: (name: string): ActorData[] | undefined => {
         for (const actor of this.actors) {
-          const data = actor.context.get(name);
-          if (data) {
-            return data;
-          }
+          return actor.context[name];
         }
       },
     };

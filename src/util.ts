@@ -9,10 +9,10 @@ import type { Message } from "./lib/Conversation.js";
  * @returns A record of the map's entries
  */
 export function reduce<T = unknown>(
-  map: Map<string, T>,
+  map: Record<string, T>,
   sort?: (a: T, b: T) => number,
 ): Record<string, T> {
-  const entries = [...map.entries()];
+  const entries = [...Object.entries(map)];
   const sortedEntries = sort
     ? entries.sort((a, b) => sort(a[1], b[1]))
     : entries;
@@ -110,24 +110,24 @@ export interface IndexedActorData extends ActorData {
  * @returns The values in the window in the original order
  */
 export function buildWindow(
-  inputValues: Record<string, Map<string, ActorData[]>>,
+  inputValues: Record<string, Record<string, ActorData[]>>,
   maxTokens: number,
-): Record<string, Record<string, ActorData[]>> {
+): Record<string, ActorData[]> {
   let currentTokens = 0;
   const sortedValues: IndexedActorData[] = [];
 
   // Add an index, section and type to each value
   for (const section in inputValues) {
     const typeMap = inputValues[section];
-    typeMap.forEach((values, type) => {
-      values.forEach((value, index) => {
+    Object.entries(typeMap).forEach(([type, values], index) => {
+      for (const value of values) {
         sortedValues.push({
           ...value,
           index,
           section,
           type,
         });
-      });
+      }
     });
   }
 
@@ -139,7 +139,7 @@ export function buildWindow(
   });
 
   // Process values in the sorted order and build the output map
-  const orderedValues: Record<string, Record<string, IndexedActorData[]>> = {};
+  const orderedValues: Record<string, IndexedActorData[]> = {};
 
   for (const value of sortedValues) {
     const tokenLength = value.tokens?.length ?? heuristic(value.value);
@@ -148,27 +148,23 @@ export function buildWindow(
     }
 
     if (!orderedValues[value.section]) {
-      orderedValues[value.section] = {};
+      orderedValues[value.section] = [];
     }
 
-    if (!orderedValues[value.section][value.type]) {
-      orderedValues[value.section][value.type] = [];
-    }
-
-    orderedValues[value.section][value.type].push(value);
+    orderedValues[value.section].push(value);
     currentTokens += tokenLength;
   }
 
-  const outputValues: Record<string, Record<string, ActorData[]>> = {};
+  const outputValues: Record<string, ActorData[]> = {};
 
   // Re-sort each type list by the original index and remove the index, section, and type properties
   for (const section in orderedValues) {
     for (const type in orderedValues[section]) {
       if (!outputValues[section]) {
-        outputValues[section] = {};
+        outputValues[section] = [];
       }
 
-      outputValues[section][type] = orderedValues[section][type].sort((a, b) =>
+      outputValues[section] = orderedValues[section].sort((a, b) =>
         a.index - b.index
       ).map(({ index, section, type, ...rest }) => rest);
     }

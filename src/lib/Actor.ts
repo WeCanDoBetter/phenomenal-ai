@@ -106,10 +106,10 @@ export enum MemoryType {
   Relationship = "relationship",
 }
 
-export type ActorContext = Map<string, ActorData[]>;
-export type ActorPersona = Map<PersonaType, ActorData[]>;
-export type ActorKnowledge = Map<KnowledgeType, ActorData[]>;
-export type ActorMemory = Map<MemoryType, ActorData[]>;
+export type ActorContext = Record<string, ActorData[]>;
+export type ActorPersona = Record<string, ActorData[]>;
+export type ActorKnowledge = Record<string, ActorData[]>;
+export type ActorMemory = Record<string, ActorData[]>;
 
 /**
  * An actor is a person or other entity that performs a role in a conversation.
@@ -155,10 +155,10 @@ export class Actor {
       actor: Actor;
       template: string;
       participants?: Actor[];
-      context: Record<string, ActorData[]>;
-      persona: Record<string, ActorData[]>;
-      knowledge: Record<string, ActorData[]>;
-      memory: Record<string, ActorData[]>;
+      context: ActorData[];
+      persona: ActorData[];
+      knowledge: ActorData[];
+      memory: ActorData[];
       messages: Message[];
     },
   ): string {
@@ -184,16 +184,16 @@ export class Actor {
   readonly template: string;
   /** The context of the actor. The context is used to store information about
    * the actor. */
-  readonly context: ActorContext = new Map();
+  readonly context: ActorContext = {};
   /** The persona of the actor. The persona is used to store information about
    * the actor. */
-  readonly persona: ActorPersona = new Map();
+  readonly persona: ActorPersona = {};
   /** The knowledge of the actor. The knowledge is used to store information
    * about the actor. */
-  readonly knowledge: ActorKnowledge = new Map();
+  readonly knowledge: ActorKnowledge = {};
   /** The memory of the actor. The memory is used to store information about the
    * actor. */
-  readonly memory: ActorMemory = new Map();
+  readonly memory: ActorMemory = {};
 
   /**
    * Creates a new actor. The actor is used to store information about the
@@ -232,25 +232,25 @@ export class Actor {
 
     if (context) {
       for (const [name, data] of Object.entries(context)) {
-        this.context.set(name, data);
+        this.context[name] = data;
       }
     }
 
     if (persona) {
       for (const [type, data] of Object.entries(persona)) {
-        this.persona.set(type as PersonaType, data);
+        this.persona[type as PersonaType] = data;
       }
     }
 
     if (knowledge) {
       for (const [type, data] of Object.entries(knowledge)) {
-        this.knowledge.set(type as KnowledgeType, data);
+        this.knowledge[type as KnowledgeType] = data;
       }
     }
 
     if (memory) {
       for (const [type, data] of Object.entries(memory)) {
-        this.memory.set(type as MemoryType, data);
+        this.memory[type as MemoryType] = data;
       }
     }
   }
@@ -278,10 +278,10 @@ export class Actor {
           : conversation.window,
       )
       : {
-        context: reduce(this.context),
-        persona: reduce(this.persona),
-        knowledge: reduce(this.knowledge),
-        memory: reduce(this.memory),
+        context: Object.values(this.context).flat(),
+        persona: Object.values(this.persona).flat(),
+        knowledge: Object.values(this.knowledge).flat(),
+        memory: Object.values(this.memory).flat(),
       };
 
     return Actor.render({
