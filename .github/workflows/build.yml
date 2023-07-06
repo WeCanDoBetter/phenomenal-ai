@@ -22,3 +22,11 @@ jobs:
 
       - name: Build
         run: npm run build
+
+      - name: Test
+        run: npm run test-with-coverage
+
+      - name: Coveralls GitHub Action
+        uses: coverallsapp/github-action@v1
+        with:
+          path-to-lcov: coverage/lcov.info
