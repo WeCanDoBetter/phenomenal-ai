@@ -14,6 +14,8 @@ const DEFAULT_TEMPLATE = await loadTemplate("actor");
 export interface ActorData<Data = string> {
   /** The name of the data entry. */
   name: string;
+  /** The type of the data entry. */
+  type: string;
   /** The value of the data entry. */
   value: Data;
   /** The description of the data entry. */
@@ -106,9 +108,32 @@ export enum MemoryType {
   Relationship = "relationship",
 }
 
+/**
+ * The context of an actor. The context is used to store information about the
+ * actor's environment. The context is used to determine the behavior of the
+ * actor. The context is used to generate the actor's prompt.
+ */
 export type ActorContext = Record<string, ActorData[]>;
+
+/**
+ * The persona of an actor. The persona is used to store information about the
+ * actor's personality. The persona is used to determine the behavior of the
+ * actor. The persona is used to generate the actor's prompt.
+ */
 export type ActorPersona = Record<string, ActorData[]>;
+
+/**
+ * The knowledge of an actor. The knowledge is used to store information about
+ * the actor's knowledge. The knowledge is used to determine the behavior of
+ * the actor. The knowledge is used to generate the actor's prompt.
+ */
 export type ActorKnowledge = Record<string, ActorData[]>;
+
+/**
+ * The memory of an actor. The memory is used to store information about the
+ * actor's memory. The memory is used to determine the behavior of the actor.
+ * The memory is used to generate the actor's prompt.
+ */
 export type ActorMemory = Record<string, ActorData[]>;
 
 /**

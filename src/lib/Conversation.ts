@@ -225,10 +225,15 @@ export class Conversation {
           keep?: boolean;
         } = {},
       ): Promise<void> => {
+        const lowerCaseName = name.toLowerCase();
+
         for (const actor of this.actors) {
           const data: ActorData = {
             name,
             description,
+            type: `${lowerCaseName.substring(0, 1).toUpperCase()}${
+              lowerCaseName.substring(1)
+            }`,
             value,
             priority: priority ?? 0,
             tokens: Array.isArray(tokens)

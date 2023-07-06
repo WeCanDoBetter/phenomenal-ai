@@ -166,7 +166,7 @@ export function buildWindow(
 
       outputValues[section] = orderedValues[section].sort((a, b) =>
         a.index - b.index
-      ).map(({ index, section, type, ...rest }) => rest);
+      ).map(({ index, section, ...rest }) => rest);
     }
   }
 
