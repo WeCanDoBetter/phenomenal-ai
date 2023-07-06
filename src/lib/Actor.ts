@@ -6,7 +6,7 @@ import { buildWindow, loadTemplate, reduce } from "../util.js";
  * The default template for an actor. The template is used to render the actor
  * prompt.
  */
-const DEFAULT_TEMPLATE = loadTemplate("actor");
+const DEFAULT_TEMPLATE = await loadTemplate("actor");
 
 /**
  * The data of an actor. The data is used to store information about the actor.

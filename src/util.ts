@@ -1,4 +1,4 @@
-import { readFileSync } from "fs";
+import { readFile } from "fs/promises";
 import { ActorData } from "./lib/Actor.js";
 import type { Message } from "./lib/Conversation.js";
 
@@ -182,7 +182,7 @@ export function buildWindow(
  * @param name The name of the template to load
  * @returns The template as a string
  */
-export function loadTemplate(name: string): string {
+export function loadTemplate(name: string): Promise<string> {
   const url = new URL(`../templates/${name}.mustache`, import.meta.url);
-  return readFileSync(url, "utf8");
+  return readFile(url, "utf8");
 }
