@@ -63,5 +63,5 @@ console.log(`${intro1.speaker}: ${intro1.text}`);
 console.log(`${intro2.speaker}: ${intro2.text}`);
 console.log();
 
-// Inject a message into the conversation (the actors' messages should be there)
+// Log the conversation history (the actors' messages should be there, but not the moderator's)
 console.log(conversation.history.messages);
