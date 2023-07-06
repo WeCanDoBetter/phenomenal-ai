@@ -20,6 +20,10 @@
     "phenomenal-ai",
     "phenomenalai"
   ],
+  "files": [
+    "dist",
+    "templates"
+  ],
   "author": "We Can Do Better <contact@wcdb.life> (https://wcdb.life)",
   "contributors": [
     {
