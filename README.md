@@ -1,6 +1,7 @@
-# Phenomenal AI
+# 🤖 Phenomenal AI
 
 [![npm version](https://badge.fury.io/js/%40wecandobetter%2Fphenomenal-ai.svg)](https://badge.fury.io/js/%40wecandobetter%2Fphenomenal-ai)
+![Build Status](https://github.com/WeCanDoBetter/phenomenal-ai/actions/workflows/build.yml/badge.svg?branch=main)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 **Phenomenal AI** is a TypeScript package for building a turn-based
@@ -12,6 +13,9 @@ rules.
 
 ## 📌 Features
 
+- ✨ **High-Level Abstraction**: Phenomenal AI provides a high level of
+  abstraction for AI-based conversation models. This allows you to focus on the
+  conversation logic and not the underlying model.
 - 🎭 **Multiple Actors**: This package supports interaction between multiple
   actors, allowing for complex conversational scenarios. Each actor can have
   their own personality and preferences.
@@ -33,11 +37,6 @@ rules.
   the context window. The context window is the number of tokens to unmask in
   the history when generating a response. This allows you to control the prompt
   size and the amount of context provided to the model.
-- ✨ **High-Level Abstraction**: Phenomenal AI provides a high level of
-  abstraction for AI-based conversation models. This allows you to focus on the
-  conversation logic and not the underlying model.
-- 📝 **TypeScript**: The package is written in TypeScript and provides type
-  definitions.
 - 📦 **Lightweight**: The package has only one external dependency (`mustache`),
   making it lightweight and easy to use.
 - 🧪 **Extensible**: The package is designed to be extensible. You can provide
@@ -45,7 +44,7 @@ rules.
 
 ## 🏁 Getting Started
 
-You can install the package via npm:
+You can install the package via `npm`:
 
 ```bash
 npm install @wecandobetter/phenomenal-ai
@@ -71,7 +70,7 @@ import { Actor, Conversation } from "@wecandobetter/phenomenal-ai";
 import { generateText } from "./text-generation"; // provide your own text generation function
 
 // Define your actors
-let actors: Actor[] = [
+const actors = [
   new Actor("John"),
   new Actor("Emma"),
 ];
@@ -158,15 +157,15 @@ const conversation = new Conversation("Morning Talk", {
     new Actor("Emma"),
   ],
   generateText: generateText, // provide your own text generation function
-  scheduler: IndexScheduler, // provide your own scheduler
+  scheduler: RoundRobinScheduler, // provide your own scheduler
   messages: [], // bootstrap the conversation with messages
   windows: { // configure the conversation window
-    history: 1024, // the maximum number of tokens to unmask in the history
+    max: 1024, // the maximum number of tokens to unmask in the history
   },
 });
 ```
 
-##### `conversation.inject(text: string, { speaker = "System" embeddings?: number[], ephemeral?: true })`
+##### `conversation.inject(text: string, { speaker = "System" embeddings?: number[][], ephemeral?: true })`
 
 Injects a new message into the conversation. Returns the injected message.
 
@@ -277,7 +276,7 @@ const messages = history.getMessagesFor("John");
 
 ##### `history.getStats()`
 
-Returns statistics about the history.
+Returns statistics about the history. The statistics are grouped by actor.
 
 ```typescript
 const stats = history.getStats();
@@ -285,10 +284,12 @@ const stats = history.getStats();
 console.log(stats);
 
 // {
-//   count: 2,
-//   textCount: 22,
-//   percentage: 0.5,
-//   textPercentage: 0.5,
+//   "Bob": {
+//     count: 2, // total number of messages
+//     textCount: 22, // total number of characters
+//     percentage: 0.5, // percentage of messages in the conversation
+//     textPercentage: 0.5, // percentage of characters in the conversation
+//   },
 // }
 ```
 
@@ -354,7 +355,8 @@ These are the methods available on the `Actor` class.
 
 ##### `new Actor(name: string, { template?: string, persona?: Persona, knowledge?: Knowledge, memory?: Memory })`
 
-Initializes a new instance of the `Actor` class.
+Initializes a new instance of the `Actor` class. If no template is provided, the
+default template will be used.
 
 ```typescript
 const actor = new Actor("John", {
