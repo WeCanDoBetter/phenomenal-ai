@@ -1,6 +1,5 @@
 import { readFile } from "fs/promises";
-import { ActorData } from "./lib/Actor.js";
-import type { Message } from "./lib/Conversation.js";
+import type { ActorData, Message } from "./types.js";
 
 /**
  * Reduce a map to a record. Optionally sort the entries before reducing.

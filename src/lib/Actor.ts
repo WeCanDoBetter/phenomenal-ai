@@ -1,5 +1,13 @@
 import { default as mustache } from "mustache";
-import { Conversation, type Message } from "./Conversation.js";
+import type {
+  ActorContext,
+  ActorData,
+  ActorKnowledge,
+  ActorMemory,
+  ActorPersona,
+  Message,
+} from "../types.js";
+import { Conversation } from "./Conversation.js";
 import { buildWindow, loadTemplate, reduce } from "../util.js";
 
 /**
@@ -7,31 +15,6 @@ import { buildWindow, loadTemplate, reduce } from "../util.js";
  * prompt.
  */
 const DEFAULT_TEMPLATE = await loadTemplate("actor");
-
-/**
- * The data of an actor. The data is used to store information about the actor.
- */
-export interface ActorData<Data = string> {
-  /** The name of the data entry. */
-  name: string;
-  /** The type of the data entry. */
-  type: string;
-  /** The value of the data entry. */
-  value: Data;
-  /** The description of the data entry. */
-  description?: string;
-  /** The priority of the data entry. Entries with a higher priority are
-   * preferred over entries with a lower priority. */
-  priority?: number;
-  /** The tokens of the data entry. Tokens can be used to calculate the
-   * prompt size. */
-  tokens?: number[];
-  /** The embeddings of the data entry. Embeddings are used to determine the
-   * similarity between entries. */
-  embeddings?: number[];
-  /** Whether to keep the data entry when truncating the context window. */
-  keep?: boolean;
-}
 
 /**
  * The type of an actor. The type is used to categorize the actor.
@@ -107,34 +90,6 @@ export enum MemoryType {
    * regard and behave toward each other. */
   Relationship = "relationship",
 }
-
-/**
- * The context of an actor. The context is used to store information about the
- * actor's environment. The context is used to determine the behavior of the
- * actor. The context is used to generate the actor's prompt.
- */
-export type ActorContext = Record<string, ActorData[]>;
-
-/**
- * The persona of an actor. The persona is used to store information about the
- * actor's personality. The persona is used to determine the behavior of the
- * actor. The persona is used to generate the actor's prompt.
- */
-export type ActorPersona = Record<string, ActorData[]>;
-
-/**
- * The knowledge of an actor. The knowledge is used to store information about
- * the actor's knowledge. The knowledge is used to determine the behavior of
- * the actor. The knowledge is used to generate the actor's prompt.
- */
-export type ActorKnowledge = Record<string, ActorData[]>;
-
-/**
- * The memory of an actor. The memory is used to store information about the
- * actor's memory. The memory is used to determine the behavior of the actor.
- * The memory is used to generate the actor's prompt.
- */
-export type ActorMemory = Record<string, ActorData[]>;
 
 /**
  * An actor is a person or other entity that performs a role in a conversation.

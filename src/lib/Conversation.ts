@@ -1,88 +1,16 @@
-import { Actor, type ActorData } from "./Actor.js";
+import type {
+  ActorData,
+  ContextWindow,
+  Embeddings,
+  GenerateEmbeddings,
+  GenerateText,
+  GenerateTokens,
+  Message,
+  TurnResponse,
+} from "../types.js";
+import { Actor } from "./Actor.js";
 import { ConversationHistory } from "./ConversationHistory.js";
 import { RoundRobinScheduler, Scheduler } from "./Scheduler.js";
-
-/**
- * A response from the model. The response contains the text that the model
- * generated, and the embeddings of the text.
- */
-export interface GenerateTextResult {
-  /** The text that the model generated. */
-  text: string;
-  /** The tokens of the text that the model generated. */
-  tokens?: number[];
-  /** The embeddings of the text that the model generated. */
-  embeddings?: number[];
-}
-
-/**
- * A function that generates text given a prompt.
- * @param prompt The prompt to generate text from.
- * @returns The generated text with optional embeddings.
- */
-export type GenerateText = (prompt: string) => Promise<GenerateTextResult>;
-
-/**
- * A function that generates tokens given a prompt.
- * @param prompt The prompt to generate tokens from.
- * @returns The generated tokens.
- */
-export type GenerateTokens = (prompt: string) => Promise<number[]>;
-
-/**
- * A function that generates embeddings given a prompt. Embeddings are used to
- * determine the similarity between messages.
- * @param prompt The prompt to generate embeddings from.
- * @returns The generated embeddings.
- */
-export type GenerateEmbeddings = (prompt: string) => Promise<number[]>;
-
-/**
- * A message in a conversation. Messages are used to communicate between actors
- * in a conversation. Messages are immutable.
- */
-export interface Message {
-  /** The actor that sent the message. */
-  readonly actor: string;
-  /** The text of the message. */
-  readonly text: string;
-  /** The feedback of the message. Feedback is used to fine-tune the model. */
-  readonly feedback: [up: number, down: number];
-  /** The tokens of the message. Tokens can be used to calculate the prompt size. */
-  readonly tokens?: number[];
-  /** The embeddings of the message. Embeddings are used to determine the similarity between messages. */
-  readonly embeddings?: number[];
-  /** Whether the message is ephemeral. Ephemeral messages are removed from the history after a turn. */
-  readonly ephemeral?: boolean;
-}
-
-/**
- * Response from an actor's turn. The response contains the actor that spoke,
- * and the text that they spoke.
- */
-export interface TurnResponse {
-  /** The speaker of the turn. */
-  speaker: string;
-  /** The actor that spoke. */
-  actor?: Actor;
-  /** The text that the actor spoke. */
-  text: string;
-  /** The prompt used to generate the text. */
-  prompt: string;
-  /** The tokens of the text that the actor spoke. */
-  tokens?: number[];
-  /** The embeddings of the text that the actor spoke. */
-  embeddings?: number[];
-}
-
-/**
- * The context window is used to determine the size of the prompt. The size of
- * the prompt is determined by the number of tokens in the context window.
- */
-export interface ContextWindow {
-  /** The maximum number of tokens in the prompt. */
-  max: number;
-}
 
 /**
  * A conversation is a collection of actors that take turns speaking. The
@@ -221,7 +149,7 @@ export class Conversation {
         { priority, tokens = false, embeddings = false, keep }: {
           priority?: number;
           tokens?: number[] | boolean;
-          embeddings?: number[] | boolean;
+          embeddings?: Embeddings | boolean;
           keep?: boolean;
         } = {},
       ): Promise<void> => {
@@ -385,7 +313,7 @@ export class Conversation {
     { speaker = "System", tokens, embeddings, ephemeral }: {
       speaker?: string | Actor;
       tokens?: number[] | boolean;
-      embeddings?: number[] | boolean;
+      embeddings?: Embeddings | boolean;
       ephemeral?: boolean;
     },
   ): Promise<Message> {
@@ -509,7 +437,7 @@ export class Conversation {
       speaker: Actor | string;
       text: string;
       tokens?: number[] | boolean;
-      embeddings?: number[] | boolean;
+      embeddings?: Embeddings | boolean;
       feedback?: [up: number, down: number];
       ephemeral?: boolean;
     },

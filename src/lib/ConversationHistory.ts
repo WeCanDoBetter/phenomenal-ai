@@ -1,9 +1,4 @@
-import { Message } from "./Conversation.js";
-
-/**
- * Make some properties of an object optional.
- */
-export type PartialBy<T, K extends keyof T> = Omit<T, K> & Partial<Pick<T, K>>;
+import type { Message, PartialBy } from "../types.js";
 
 /**
  * Statistics about the messages in the history.
